@@ -1,0 +1,4 @@
+interface:
+  display_name: "C++20 Coding Standards"
+  short_description: "Style, naming, docs, and C++20 code hygiene"
+  default_prompt: "Use $coding-standards to review this C++ change for style and maintainability."

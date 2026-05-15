@@ -1,0 +1,4 @@
+interface:
+  display_name: "C++ Templates"
+  short_description: "Templates, metaprogramming, and concepts"
+  default_prompt: "Use $cpp-templates-metaprogramming to modernize this template-heavy C++ code."
