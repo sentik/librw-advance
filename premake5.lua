@@ -43,6 +43,13 @@ workspace "librw"
 	language "C++"
 
 	configurations { "Release", "Debug" }
+	filter { "system:windows", "action:vs*" }
+		cppdialect "C++latest"
+		toolset "msc"
+		systemversion "latest"
+		preferredtoolarchitecture "x86_64"
+		symbols "Full"
+		flags { "MultiProcessorCompile" } -- enables MSVC /MP
 	filter { "system:windows" }
 		configurations { "ReleaseStatic" }
 		platforms { "win-x86-null", "win-x86-gl3", "win-x86-d3d9",
