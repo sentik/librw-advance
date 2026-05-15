@@ -1,5 +1,6 @@
 /bin
 /build
+/build-d3d9
 /obj
 /lib
 /output
