@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -8,7 +8,8 @@
 #include "../rwrender.h"
 #include "../rwengine.h"
 #include "../rwpipeline.h"
-#include "../rwobjects.h"
+#include "../rwscene.h"
+#include "../rwgeometry.h"
 #ifdef RW_OPENGL
 #include "rwgl3.h"
 #include "rwgl3shader.h"

@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
@@ -6,7 +6,7 @@
 #include "rwerror.h"
 #include "rwplg.h"
 #include "rwpipeline.h"
-#include "rwobjects.h"
+#include "rwframe.h"
 #include "rwengine.h"
 
 #define PLUGIN_ID ID_FRAMELIST

@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -7,7 +7,11 @@
 #include "../rwerror.h"
 #include "../rwplg.h"
 #include "../rwpipeline.h"
-#include "../rwobjects.h"
+#include "../rwscene.h"
+#include "../rwgeometry.h"
+#include "../rwtexture.h"
+#include "../rwraster.h"
+#include "../rwimage.h"
 #include "../rwengine.h"
 #ifdef RW_OPENGL
 #include "rwgl3.h"

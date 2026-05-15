@@ -1,11 +1,15 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 
 #include "rwbase.h"
 #include "rwerror.h"
 #include "rwplg.h"
 #include "rwrender.h"
 #include "rwpipeline.h"
-#include "rwobjects.h"
+#include "rwscene.h"
+#include "rwgeometry.h"
+#include "rwtexture.h"
+#include "rwraster.h"
+#include "rwimage.h"
 #include "rwengine.h"
 #include "rwcharset.h"
 

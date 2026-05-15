@@ -4,6 +4,7 @@
 
 #include "rwbase.h"
 #include "rwplg.h"
+#include "rwobject.h"
 #include "rwfwd.h"
 
 namespace rw {

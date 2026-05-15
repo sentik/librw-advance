@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -10,7 +10,10 @@
 #include "../rwrender.h"
 #include "../rwengine.h"
 #include "../rwpipeline.h"
-#include "../rwobjects.h"
+#include "../rwscene.h"
+#include "../rwgeometry.h"
+#include "../rwtexture.h"
+#include "../rwraster.h"
 #include "rwd3d.h"
 #include "rwd3dimpl.h"
 
