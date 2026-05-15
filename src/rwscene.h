@@ -15,7 +15,7 @@ struct Atomic
 {
 	PLUGINBASE
 	using RenderCB = void(*)(Atomic *atomic);
-	enum { ID = 1 };
+	static inline constexpr int32 ID = 1;
 	enum {
 	// flags
 		COLLISIONTEST = 0x01,	// unused here
@@ -76,7 +76,7 @@ void registerAtomicRightsPlugin(void);
 struct Light
 {
 	PLUGINBASE
-	enum { ID = 3 };
+	static inline constexpr int32 ID = 3;
 	ObjectWithFrame object;
 	float32 radius;
 	RGBAf color;
@@ -138,11 +138,10 @@ struct FrustumPlane
 struct Camera
 {
 	PLUGINBASE
-	enum { ID = 4 };
-	enum { PERSPECTIVE = 1, PARALLEL };
-	enum { CLEARIMAGE = 0x1, CLEARZ = 0x2, CLEARSTENCIL = 0x4 };
-	// return value of frustumTestSphere
-	enum { SPHEREOUTSIDE, SPHEREBOUNDARY, SPHEREINSIDE };
+	static inline constexpr int32 ID = 4;
+	enum class Projection : int32 { Perspective = 1, Parallel };
+	enum : uint32 { CLEARIMAGE = 0x1, CLEARZ = 0x2, CLEARSTENCIL = 0x4 };
+	enum class FrustumResult : int32 { Outside = 0, Boundary, Inside };
 
 	ObjectWithFrame object;
 	void (*beginUpdateCB)(Camera*);
@@ -151,7 +150,7 @@ struct Camera
 	V2d viewOffset;
 	float32 nearPlane, farPlane;
 	float32 fogPlane;
-	int32 projection;
+	Projection projection;
 
 	Matrix viewMatrix;
 	float32 zScale, zShift;
@@ -196,8 +195,8 @@ struct Camera
 	void setFarPlane(float32);
 	void setViewWindow(const V2d *window);
 	void setViewOffset(const V2d *offset);
-	void setProjection(int32 proj);
-	[[nodiscard]] int32 frustumTestSphere(const Sphere *s) const;
+	void setProjection(Projection proj);
+	[[nodiscard]] FrustumResult frustumTestSphere(const Sphere *s) const;
 	static Camera *streamRead(Stream *stream);
 	bool streamWrite(Stream *stream);
 	uint32 streamGetSize(void);
@@ -209,7 +208,7 @@ struct Camera
 struct Clump
 {
 	PLUGINBASE
-	enum { ID = 2 };
+	static inline constexpr int32 ID = 2;
 	Object object;
 	LinkList atomics;
 	LinkList lights;
@@ -259,7 +258,7 @@ struct WorldLights
 struct World
 {
 	PLUGINBASE
-	enum { ID = 7 };
+	static inline constexpr int32 ID = 7;
 	Object object;
 	LinkList localLights;	// these have positions (type >= 0x80)
 	LinkList globalLights;	// these do not (type < 0x80)

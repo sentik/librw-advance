@@ -235,7 +235,7 @@ ResetCameraAndClump(void)
 {
         SubCameraData.nearClipPlane = 0.3f;
         SubCameraData.farClipPlane = 5.0f;
-        SubCameraData.projection = rw::Camera::PERSPECTIVE;
+        SubCameraData.projection = rw::Camera::Projection::Perspective;
         SubCameraData.offset.x = 0.0f;
         SubCameraData.offset.y = 0.0f;
         SubCameraData.viewWindow.x = 0.5f;

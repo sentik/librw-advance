@@ -10,6 +10,7 @@
 #include "../rwpipeline.h"
 #include "../rwscene.h"
 #include "../rwgeometry.h"
+#include "../rwraster.h"
 #include "../rwengine.h"
 #include "rwd3d.h"
 #include "rwd3d9.h"

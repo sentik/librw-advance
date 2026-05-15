@@ -229,7 +229,7 @@ cameraSync(ObjectWithFrame *obj)
 	proj.up.y = -yscl;
 	proj.up.z = 0.0f;
 
-	if(cam->projection == Camera::PERSPECTIVE){
+	if(cam->projection == Camera::Projection::Perspective){
 		proj.pos.x = -cam->viewOffset.x*xscl;
 		proj.pos.y = cam->viewOffset.y*yscl;
 		proj.pos.z = 0.0f;
@@ -293,7 +293,7 @@ Camera::create(void)
 	cam->nearPlane = 0.05f;
 	cam->farPlane = 10.0f;
 	cam->fogPlane = 5.0f;
-	cam->projection = Camera::PERSPECTIVE;
+	cam->projection = Camera::Projection::Perspective;
 
 	cam->frameBuffer = nil;
 	cam->zBuffer = nil;
@@ -373,7 +373,7 @@ calczShiftScale(Camera *cam)
 	// RW does this
 	N += (F - N)/10000.0f;
 	F -= (F - N)/10000.0f;
-	if(cam->projection == Camera::PERSPECTIVE){
+	if(cam->projection == Camera::Projection::Perspective){
 		cam->zScale = (N - F)*n*f/(f - n);
 		cam->zShift = (F*f - N*n)/(f - n);
 	}else{
@@ -417,24 +417,24 @@ Camera::setViewOffset(const V2d *offset)
 }
 
 void
-Camera::setProjection(int32 proj)
+Camera::setProjection(Projection proj)
 {
 	this->projection = proj;
 	if(this->getFrame())
 		this->getFrame()->updateObjects();
 }
 
-int32
+Camera::FrustumResult
 Camera::frustumTestSphere(const Sphere *s) const
 {
-	int32 res = SPHEREINSIDE;
+	FrustumResult res = FrustumResult::Inside;
 	const FrustumPlane *p = this->frustumPlanes;
 	for(int32 i = 0; i < 6; i++){
 		float32 dist = dot(p->plane.normal, s->center) - p->plane.distance;
 		if(s->radius < dist)
-			return SPHEREOUTSIDE;
+			return FrustumResult::Outside;
 		if(s->radius > -dist)
-			res = SPHEREBOUNDARY;
+			res = FrustumResult::Boundary;
 		p++;
 	}
 	return res;
@@ -464,7 +464,7 @@ Camera::streamRead(Stream *stream)
 	cam->nearPlane = buf.nearPlane;
 	cam->farPlane = buf.farPlane;
 	cam->fogPlane = buf.fogPlane;
-	cam->projection = buf.projection;
+	cam->projection = static_cast<Projection>(buf.projection);
 	if(s_plglist.streamRead(stream, cam))
 		return cam;
 	cam->destroy();
@@ -482,7 +482,7 @@ Camera::streamWrite(Stream *stream)
 	buf.nearPlane = this->nearPlane;
 	buf.farPlane  = this->farPlane;
 	buf.fogPlane = this->fogPlane;
-	buf.projection = this->projection;
+	buf.projection = static_cast<int32>(this->projection);
 	stream->write32(&buf, sizeof(CameraChunkData));
 	s_plglist.streamWrite(stream, this);
 	return true;

@@ -12,7 +12,7 @@ struct Frame
 {
 	PLUGINBASE
 	using Callback = Frame*(*)(Frame *f, void *data);
-	enum { ID = 0 };
+	static inline constexpr int32 ID = 0;
 	enum {		// private flags
 		// The hierarchy has unsynched frames
 		HIERARCHYSYNCLTM = 0x01,	// LTM not synched

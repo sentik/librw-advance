@@ -1269,7 +1269,7 @@ beginUpdate(Camera *cam)
 	proj[9] = cam->viewOffset.y*invwy;
 	proj[12] = -proj[8];
 	proj[13] = -proj[9];
-	if(cam->projection == Camera::PERSPECTIVE){
+	if(cam->projection == Camera::Projection::Perspective){
 		proj[10] = cam->farPlane*invz;
 		proj[11] = 1.0f;
 

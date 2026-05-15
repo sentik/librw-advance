@@ -10,6 +10,7 @@
 #include "../rwpipeline.h"
 #include "../rwscene.h"
 #include "../rwgeometry.h"
+#include "../rwtexture.h"
 #include "../rwanim.h"
 #include "../rwengine.h"
 #include "../rwrender.h"

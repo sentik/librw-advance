@@ -83,7 +83,7 @@ int32 getMaxSupportedMaxAnisotropy(void);
 struct TexDictionary
 {
 	PLUGINBASE
-	enum { ID = 6 };
+	static inline constexpr int32 ID = 6;
 	Object object;
 	LinkList textures;
 	LLLink inGlobalList;

@@ -103,7 +103,7 @@ struct MaterialList
 struct Geometry
 {
 	PLUGINBASE
-	enum { ID = 8 };
+	static inline constexpr int32 ID = 8;
 	Object object;
 	uint32 flags;
 	uint16 lockedSinceInst;
