@@ -39,22 +39,22 @@ struct Texture
 
 	static int32 numAllocated;
 
-	static Texture *create(Raster *raster);
-	void addRef(void) { this->refCount++; }
+	[[nodiscard]] static Texture *create(Raster *raster);
+	void addRef(void) noexcept { this->refCount++; }
 	void destroy(void);
-	static Texture *fromDict(LLLink *lnk){
+	[[nodiscard]] static Texture *fromDict(LLLink *lnk){
 		return LLLinkGetData(lnk, Texture, inDict); }
-	FilterMode getFilter(void) { return (FilterMode)(filterAddressing & 0xFF); }
-	void setFilter(FilterMode f) { filterAddressing = (filterAddressing & ~0xFF) | f; }
-	Addressing getAddressU(void) { return (Addressing)((filterAddressing >> 8) & 0xF); }
-	Addressing getAddressV(void) { return (Addressing)((filterAddressing >> 12) & 0xF); }
-	void setAddressU(Addressing u) { filterAddressing = (filterAddressing & ~0xF00) | u<<8; }
-	void setAddressV(Addressing v) { filterAddressing = (filterAddressing & ~0xF000) | v<<12; }
-	static Texture *streamRead(Stream *stream);
+	[[nodiscard]] FilterMode getFilter(void) const noexcept { return (FilterMode)(filterAddressing & 0xFF); }
+	void setFilter(FilterMode f) noexcept { filterAddressing = (filterAddressing & ~0xFF) | f; }
+	[[nodiscard]] Addressing getAddressU(void) const noexcept { return (Addressing)((filterAddressing >> 8) & 0xF); }
+	[[nodiscard]] Addressing getAddressV(void) const noexcept { return (Addressing)((filterAddressing >> 12) & 0xF); }
+	void setAddressU(Addressing u) noexcept { filterAddressing = (filterAddressing & ~0xF00) | u<<8; }
+	void setAddressV(Addressing v) noexcept { filterAddressing = (filterAddressing & ~0xF000) | v<<12; }
+	[[nodiscard]] static Texture *streamRead(Stream *stream);
 	bool streamWrite(Stream *stream);
 	uint32 streamGetSize(void);
-	static Texture *read(const char *name, const char *mask);
-	static Texture *streamReadNative(Stream *stream);
+	[[nodiscard]] static Texture *read(const char *name, const char *mask);
+	[[nodiscard]] static Texture *streamReadNative(Stream *stream);
 	void streamWriteNative(Stream *stream);
 	uint32 streamGetSizeNative(void);
 
@@ -64,11 +64,11 @@ struct Texture
 	static void setCreateDummies(bool32);	// default: false
 	static void setMipmapping(bool32);	// default: false
 	static void setAutoMipmapping(bool32);	// default: false
-	static bool32 getMipmapping(void);
-	static bool32 getAutoMipmapping(void);
+	[[nodiscard]] static bool32 getMipmapping(void);
+	[[nodiscard]] static bool32 getAutoMipmapping(void);
 
 	void setMaxAnisotropy(int32 maxaniso);	// only if plugin is attached
-	int32 getMaxAnisotropy(void);
+	[[nodiscard]] int32 getMaxAnisotropy(void);
 
 #ifndef RWPUBLIC
 	static void registerModule(void);
@@ -90,21 +90,21 @@ struct TexDictionary
 
 	static int32 numAllocated;
 
-	static TexDictionary *create(void);
-	static TexDictionary *fromLink(LLLink *lnk){
+	[[nodiscard]] static TexDictionary *create(void);
+	[[nodiscard]] static TexDictionary *fromLink(LLLink *lnk){
 		return LLLinkGetData(lnk, TexDictionary, inGlobalList); }
 	void destroy(void);
-	int32 count(void) { return this->textures.count(); }
+	[[nodiscard]] int32 count(void) { return this->textures.count(); }
 	void add(Texture *t);
 	void addFront(Texture *t);
 	void remove(Texture *t);
-	Texture *find(const char *name);
-	static TexDictionary *streamRead(Stream *stream);
+	[[nodiscard]] Texture *find(const char *name);
+	[[nodiscard]] static TexDictionary *streamRead(Stream *stream);
 	void streamWrite(Stream *stream);
 	uint32 streamGetSize(void);
 
 	static void setCurrent(TexDictionary *txd);
-	static TexDictionary *getCurrent(void);
+	[[nodiscard]] static TexDictionary *getCurrent(void);
 };
 
 }

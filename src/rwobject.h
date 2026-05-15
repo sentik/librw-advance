@@ -14,14 +14,14 @@ struct Object
 	uint8 privateFlags;
 	void *parent;
 
-	void init(uint8 type, uint8 subType){
+	void init(uint8 type, uint8 subType) noexcept {
 		this->type = type;
 		this->subType = subType;
 		this->flags = 0;
 		this->privateFlags = 0;
 		this->parent = nullptr;
 	}
-	void copy(Object *o){
+	void copy(Object *o) noexcept {
 		this->type = o->type;
 		this->subType = o->subType;
 		this->flags = o->flags;

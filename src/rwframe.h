@@ -39,19 +39,19 @@ struct Frame
 
 	static int32 numAllocated;
 
-	static Frame *create(void);
-	Frame *cloneHierarchy(void);
+	[[nodiscard]] static Frame *create(void);
+	[[nodiscard]] Frame *cloneHierarchy(void);
 	void destroy(void);
 	void destroyHierarchy(void);
 	Frame *addChild(Frame *f, bool32 append = 0);
 	Frame *removeChild(void);
 	Frame *forAllChildren(Callback cb, void *data);
-	Frame *getParent(void) const {
+	[[nodiscard]] Frame *getParent(void) const noexcept {
 		return (Frame*)this->object.parent; }
-	int32 count(void);
-	bool32 dirty(void) const {
+	[[nodiscard]] int32 count(void);
+	[[nodiscard]] bool32 dirty(void) const noexcept {
 		return !!(this->root->object.privateFlags & HIERARCHYSYNC); }
-	Matrix *getLTM(void);
+	[[nodiscard]] Matrix *getLTM(void);
 	void rotate(const V3d *axis, float32 angle, CombineOp op = rw::COMBINEPOSTCONCAT);
 	void rotate(const Quat *q, CombineOp op = rw::COMBINEPOSTCONCAT);
 	void translate(const V3d *trans, CombineOp op = rw::COMBINEPOSTCONCAT);

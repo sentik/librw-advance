@@ -40,19 +40,19 @@ struct Atomic
 
 	static int32 numAllocated;
 
-	static Atomic *create(void);
-	Atomic *clone(void);
+	[[nodiscard]] static Atomic *create(void);
+	[[nodiscard]] Atomic *clone(void);
 	void destroy(void);
 	void setFrame(Frame *f) {
 		this->object.setFrame(f);
 		this->object.object.privateFlags |= WORLDBOUNDDIRTY;
 	}
-	Frame *getFrame(void) const { return (Frame*)this->object.object.parent; }
-	static Atomic *fromClump(LLLink *lnk){
+	[[nodiscard]] Frame *getFrame(void) const noexcept { return (Frame*)this->object.object.parent; }
+	[[nodiscard]] static Atomic *fromClump(LLLink *lnk){
 		return LLLinkGetData(lnk, Atomic, inClump); }
 	void setGeometry(Geometry *geo, uint32 flags);
-	Sphere *getWorldBoundingSphere(void);
-	ObjPipeline *getPipeline(void);
+	[[nodiscard]] Sphere *getWorldBoundingSphere(void);
+	[[nodiscard]] ObjPipeline *getPipeline(void);
 	void instance(void);
 	void uninstance(void);
 	void render(void) { this->renderCB(this); }
@@ -61,9 +61,9 @@ struct Atomic
 		if(this->renderCB == nullptr)
 			this->renderCB = defaultRenderCB;
 	};
-	void setFlags(uint32 flags) { this->object.object.flags = flags; }
-	uint32 getFlags(void) const { return this->object.object.flags; }
-	static Atomic *streamReadClump(Stream *stream,
+	void setFlags(uint32 flags) noexcept { this->object.object.flags = flags; }
+	[[nodiscard]] uint32 getFlags(void) const noexcept { return this->object.object.flags; }
+	[[nodiscard]] static Atomic *streamReadClump(Stream *stream,
 		FrameList_ *frameList, Geometry **geometryList);
 	bool streamWriteClump(Stream *stream, FrameList_ *frmlst);
 	uint32 streamGetSize(void);
@@ -93,21 +93,21 @@ struct Light
 
 	static int32 numAllocated;
 
-	static Light *create(int32 type);
+	[[nodiscard]] static Light *create(int32 type);
 	void destroy(void);
 	void setFrame(Frame *f) { this->object.setFrame(f); }
-	Frame *getFrame(void) const { return (Frame*)this->object.object.parent; }
-	static Light *fromClump(LLLink *lnk){
+	[[nodiscard]] Frame *getFrame(void) const noexcept { return (Frame*)this->object.object.parent; }
+	[[nodiscard]] static Light *fromClump(LLLink *lnk){
 		return LLLinkGetData(lnk, Light, inClump); }
-	static Light *fromWorld(LLLink *lnk){
+	[[nodiscard]] static Light *fromWorld(LLLink *lnk){
 		return LLLinkGetData(lnk, Light, inWorld); }
 	void setAngle(float32 angle);
-	float32 getAngle(void);
+	[[nodiscard]] float32 getAngle(void);
 	void setColor(float32 r, float32 g, float32 b);
-	int32 getType(void){ return this->object.object.subType; }
-	void setFlags(uint32 flags) { this->object.object.flags = flags; }
-	uint32 getFlags(void) { return this->object.object.flags; }
-	static Light *streamRead(Stream *stream);
+	[[nodiscard]] int32 getType(void) const noexcept { return this->object.object.subType; }
+	void setFlags(uint32 flags) noexcept { this->object.object.flags = flags; }
+	[[nodiscard]] uint32 getFlags(void) const noexcept { return this->object.object.flags; }
+	[[nodiscard]] static Light *streamRead(Stream *stream);
 	bool streamWrite(Stream *stream);
 	uint32 streamGetSize(void);
 
@@ -181,12 +181,12 @@ struct Camera
 
 	static int32 numAllocated;
 
-	static Camera *create(void);
-	Camera *clone(void);
+	[[nodiscard]] static Camera *create(void);
+	[[nodiscard]] Camera *clone(void);
 	void destroy(void);
 	void setFrame(Frame *f) { this->object.setFrame(f); }
-	Frame *getFrame(void)const { return (Frame*)this->object.object.parent; }
-	static Camera *fromClump(LLLink *lnk){
+	[[nodiscard]] Frame *getFrame(void) const noexcept { return (Frame*)this->object.object.parent; }
+	[[nodiscard]] static Camera *fromClump(LLLink *lnk){
 		return LLLinkGetData(lnk, Camera, inClump); }
 	void beginUpdate(void) { this->beginUpdateCB(this); }
 	void endUpdate(void) { this->endUpdateCB(this); }
@@ -197,7 +197,7 @@ struct Camera
 	void setViewWindow(const V2d *window);
 	void setViewOffset(const V2d *offset);
 	void setProjection(int32 proj);
-	int32 frustumTestSphere(const Sphere *s) const;
+	[[nodiscard]] int32 frustumTestSphere(const Sphere *s) const;
 	static Camera *streamRead(Stream *stream);
 	bool streamWrite(Stream *stream);
 	uint32 streamGetSize(void);
@@ -220,25 +220,25 @@ struct Clump
 
 	static int32 numAllocated;
 
-	static Clump *create(void);
-	Clump *clone(void);
+	[[nodiscard]] static Clump *create(void);
+	[[nodiscard]] Clump *clone(void);
 	void destroy(void);
-	static Clump *fromWorld(LLLink *lnk){
+	[[nodiscard]] static Clump *fromWorld(LLLink *lnk){
 		return LLLinkGetData(lnk, Clump, inWorld); }
-	int32 countAtomics(void) { return this->atomics.count(); }
+	[[nodiscard]] int32 countAtomics(void) { return this->atomics.count(); }
 	void addAtomic(Atomic *a);
 	void removeAtomic(Atomic *a);
-	int32 countLights(void) { return this->lights.count(); }
+	[[nodiscard]] int32 countLights(void) { return this->lights.count(); }
 	void addLight(Light *l);
 	void removeLight(Light *l);
-	int32 countCameras(void) { return this->cameras.count(); }
+	[[nodiscard]] int32 countCameras(void) { return this->cameras.count(); }
 	void addCamera(Camera *c);
 	void removeCamera(Camera *c);
-	void setFrame(Frame *f){
+	void setFrame(Frame *f) noexcept {
 		this->object.parent = f; }
-	Frame *getFrame(void) const {
+	[[nodiscard]] Frame *getFrame(void) const noexcept {
 		return (Frame*)this->object.parent; }
-	static Clump *streamRead(Stream *stream);
+	[[nodiscard]] static Clump *streamRead(Stream *stream);
 	bool streamWrite(Stream *stream);
 	uint32 streamGetSize(void);
 	void render(void);
@@ -267,7 +267,7 @@ struct World
 
 	static int32 numAllocated;
 
-	static World *create(BBox *bbox = nullptr);	// TODO: should probably make this non-optional
+	[[nodiscard]] static World *create(BBox *bbox = nullptr);	// TODO: should probably make this non-optional
 	void destroy(void);
 	void addLight(Light *light);
 	void removeLight(Light *light);

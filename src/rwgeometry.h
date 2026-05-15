@@ -28,9 +28,9 @@ struct Material
 
 	static int32 numAllocated;
 
-	static Material *create(void);
-	void addRef(void) { this->refCount++; }
-	Material *clone(void);
+	[[nodiscard]] static Material *create(void);
+	void addRef(void) noexcept { this->refCount++; }
+	[[nodiscard]] Material *clone(void);
 	void destroy(void);
 	void setTexture(Texture *tex);
 	static Material *streamRead(Stream *stream);
@@ -59,9 +59,9 @@ struct MeshHeader
 	uint32 pad;	// needed for alignment of Meshes
 	// after this the meshes
 
-	Mesh *getMeshes(void) { return (Mesh*)(this+1); }
+	[[nodiscard]] Mesh *getMeshes(void) noexcept { return (Mesh*)(this+1); }
 	void setupIndices(void);
-	uint32 guessNumTriangles(void);
+	[[nodiscard]] uint32 guessNumTriangles(void);
 };
 
 struct MorphTarget
@@ -71,7 +71,7 @@ struct MorphTarget
 	V3d *vertices;
 	V3d *normals;
 
-	Sphere calculateBoundingSphere(void) const;
+	[[nodiscard]] Sphere calculateBoundingSphere(void) const;
 };
 
 struct InstanceDataHeader
@@ -93,8 +93,8 @@ struct MaterialList
 
 	void init(void);
 	void deinit(void);
-	int32 appendMaterial(Material *mat);
-	int32 findIndex(Material *mat);
+	[[nodiscard]] int32 appendMaterial(Material *mat);
+	[[nodiscard]] int32 findIndex(Material *mat);
 	static MaterialList *streamRead(Stream *stream, MaterialList *matlist);
 	bool streamWrite(Stream *stream);
 	uint32 streamGetSize(void);
@@ -126,14 +126,14 @@ struct Geometry
 
 	static int32 numAllocated;
 
-	static Geometry *create(int32 numVerts, int32 numTris, uint32 flags);
-	void addRef(void) { this->refCount++; }
+	[[nodiscard]] static Geometry *create(int32 numVerts, int32 numTris, uint32 flags);
+	void addRef(void) noexcept { this->refCount++; }
 	void destroy(void);
 	void lock(int32 lockFlags);
 	void unlock(void);
 	void addMorphTargets(int32 n);
 	void calculateBoundingSphere(void);
-	bool32 hasColoredMaterial(void);
+	[[nodiscard]] bool32 hasColoredMaterial(void);
 	void allocateData(void);
 	MeshHeader *allocateMeshes(int32 numMeshes, uint32 numIndices, bool32 noIndices);
 	void generateTriangles(int8 *adc = nullptr);
@@ -141,7 +141,7 @@ struct Geometry
 	void buildTristrips(void);	// private, used by buildMeshes
 	void correctTristripWinding(void);
 	void removeUnusedMaterials(void);
-	static Geometry *streamRead(Stream *stream);
+	[[nodiscard]] static Geometry *streamRead(Stream *stream);
 	bool streamWrite(Stream *stream);
 	uint32 streamGetSize(void);
 

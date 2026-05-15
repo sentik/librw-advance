@@ -46,31 +46,31 @@ struct Raster
 
 	static int32 numAllocated;
 
-	static Raster *create(int32 width, int32 height, int32 depth,
-	                      int32 format, int32 platform = 0);
+	[[nodiscard]] static Raster *create(int32 width, int32 height, int32 depth,
+	                                    int32 format, int32 platform = 0);
 	void subRaster(Raster *parent, Rect *r);
 	void destroy(void);
-	static bool32 imageFindRasterFormat(Image *image, int32 type,
+	[[nodiscard]] static bool32 imageFindRasterFormat(Image *image, int32 type,
 		int32 *pWidth, int32 *pHeight, int32 *pDepth, int32 *pFormat, int32 platform = 0);
-	Raster *setFromImage(Image *image, int32 platform = 0);
-	static Raster *createFromImage(Image *image, int32 platform = 0);
-	Image *toImage(void);
-	uint8 *lock(int32 level, int32 lockMode);
+	[[nodiscard]] Raster *setFromImage(Image *image, int32 platform = 0);
+	[[nodiscard]] static Raster *createFromImage(Image *image, int32 platform = 0);
+	[[nodiscard]] Image *toImage(void);
+	[[nodiscard]] uint8 *lock(int32 level, int32 lockMode);
 	void unlock(int32 level);
-	uint8 *lockPalette(int32 lockMode);
+	[[nodiscard]] uint8 *lockPalette(int32 lockMode);
 	void unlockPalette(void);
-	int32 getNumLevels(void);
-	static int32 calculateNumLevels(int32 width, int32 height);
-	static bool formatHasAlpha(int32 format);
+	[[nodiscard]] int32 getNumLevels(void);
+	[[nodiscard]] static int32 calculateNumLevels(int32 width, int32 height);
+	[[nodiscard]] static bool formatHasAlpha(int32 format);
 
 	void show(uint32 flags);
 
-	static Raster *pushContext(Raster *raster);
-	static Raster *popContext(void);
-	static Raster *getCurrentContext(void);
-	bool32 renderFast(int32 x, int32 y);
+	[[nodiscard]] static Raster *pushContext(Raster *raster);
+	[[nodiscard]] static Raster *popContext(void);
+	[[nodiscard]] static Raster *getCurrentContext(void);
+	[[nodiscard]] bool32 renderFast(int32 x, int32 y);
 
-	static Raster *convertTexToCurrentPlatform(Raster *ras);
+	[[nodiscard]] static Raster *convertTexToCurrentPlatform(Raster *ras);
 #ifndef RWPUBLIC
 	static void registerModule(void);
 #endif

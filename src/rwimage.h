@@ -18,7 +18,7 @@ struct Image
 
 	static int32 numAllocated;
 
-	static Image *create(int32 width, int32 height, int32 depth);
+	[[nodiscard]] static Image *create(int32 width, int32 height, int32 depth);
 	void destroy(void);
 	void allocate(void);
 	void free(void);
@@ -26,20 +26,20 @@ struct Image
 	void setPixelsDXT(int32 type, uint8 *pixels);
 	void setPalette(uint8 *palette);
 	void compressPalette(void);	// turn 8 bit into 4 bit if possible
-	bool32 hasAlpha(void);
+	[[nodiscard]] bool32 hasAlpha(void);
 	void convertTo32(void);
 	void palettize(int32 depth);
 	void unpalettize(bool forceAlpha = false);
 	void makeMask(void);
 	void applyMask(Image *mask);
 	void removeMask(void);
-	Image *extractMask(void);
+	[[nodiscard]] Image *extractMask(void);
 
 	static void setSearchPath(const char*);
 	static void printSearchPath(void);
-	static char *getFilename(const char*);
-	static Image *read(const char *imageName);
-	static Image *readMasked(const char *imageName, const char *maskName);
+	[[nodiscard]] static char *getFilename(const char*);
+	[[nodiscard]] static Image *read(const char *imageName);
+	[[nodiscard]] static Image *readMasked(const char *imageName, const char *maskName);
 
 
 	using fileRead = Image*(*)(const char *afilename);
