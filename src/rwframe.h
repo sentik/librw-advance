@@ -11,7 +11,7 @@ namespace rw {
 struct Frame
 {
 	PLUGINBASE
-	typedef Frame *(*Callback)(Frame *f, void *data);
+	using Callback = Frame*(*)(Frame *f, void *data);
 	enum { ID = 0 };
 	enum {		// private flags
 		// The hierarchy has unsynched frames
@@ -84,7 +84,7 @@ Frame **makeFrameList(Frame *frame, Frame **flist);
 
 struct ObjectWithFrame
 {
-	typedef void (*Sync)(ObjectWithFrame*);
+	using Sync = void(*)(ObjectWithFrame*);
 
 	Object object;
 	LLLink inFrame;

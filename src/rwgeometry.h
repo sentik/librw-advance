@@ -136,7 +136,7 @@ struct Geometry
 	bool32 hasColoredMaterial(void);
 	void allocateData(void);
 	MeshHeader *allocateMeshes(int32 numMeshes, uint32 numIndices, bool32 noIndices);
-	void generateTriangles(int8 *adc = nil);
+	void generateTriangles(int8 *adc = nullptr);
 	void buildMeshes(void);
 	void buildTristrips(void);	// private, used by buildMeshes
 	void correctTristripWinding(void);

@@ -19,14 +19,14 @@ struct Object
 		this->subType = subType;
 		this->flags = 0;
 		this->privateFlags = 0;
-		this->parent = nil;
+		this->parent = nullptr;
 	}
 	void copy(Object *o){
 		this->type = o->type;
 		this->subType = o->subType;
 		this->flags = o->flags;
 		this->privateFlags = o->privateFlags;
-		this->parent = nil;
+		this->parent = nullptr;
 	}
 };
 

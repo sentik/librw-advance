@@ -42,8 +42,8 @@ struct Image
 	static Image *readMasked(const char *imageName, const char *maskName);
 
 
-	typedef Image *(*fileRead)(const char *afilename);
-	typedef void (*fileWrite)(Image *image, const char *filename);
+	using fileRead = Image*(*)(const char *afilename);
+	using fileWrite = void(*)(Image *image, const char *filename);
 	static bool32 registerFileFormat(const char *ext, fileRead read, fileWrite write);
 
 #ifndef RWPUBLIC

@@ -14,7 +14,7 @@ namespace rw {
 struct Atomic
 {
 	PLUGINBASE
-	typedef void (*RenderCB)(Atomic *atomic);
+	using RenderCB = void(*)(Atomic *atomic);
 	enum { ID = 1 };
 	enum {
 	// flags
@@ -58,7 +58,7 @@ struct Atomic
 	void render(void) { this->renderCB(this); }
 	void setRenderCB(RenderCB renderCB){
 		this->renderCB = renderCB;
-		if(this->renderCB == nil)
+		if(this->renderCB == nullptr)
 			this->renderCB = defaultRenderCB;
 	};
 	void setFlags(uint32 flags) { this->object.object.flags = flags; }
@@ -267,7 +267,7 @@ struct World
 
 	static int32 numAllocated;
 
-	static World *create(BBox *bbox = nil);	// TODO: should probably make this non-optional
+	static World *create(BBox *bbox = nullptr);	// TODO: should probably make this non-optional
 	void destroy(void);
 	void addLight(Light *light);
 	void removeLight(Light *light);
