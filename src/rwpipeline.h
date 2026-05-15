@@ -1,3 +1,7 @@
+#pragma once
+#ifndef RW_PIPELINE_H
+#define RW_PIPELINE_H
+
 namespace rw {
 
 struct Atomic;
@@ -63,3 +67,5 @@ bool32 instColor(int type, uint8 *dst, RGBA *src, uint32 numVertices, uint32 str
 void uninstColor(int type, RGBA *dst, uint8 *src, uint32 numVertices, uint32 stride);
 
 }
+
+#endif // RW_PIPELINE_H
