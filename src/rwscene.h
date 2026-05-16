@@ -17,6 +17,7 @@ namespace rw {
 struct Atomic
 {
 	PLUGINBASE
+	using plugin_owner_tag = Atomic;
 	using RenderCB = void(*)(Atomic *atomic);
 	static inline constexpr int32 ID = 1;
 	enum {
@@ -228,6 +229,7 @@ struct Camera
 struct Clump
 {
 	PLUGINBASE
+	using plugin_owner_tag = Clump;
 	static inline constexpr int32 ID = 2;
 	Object object;
 	LinkList atomics;
@@ -278,6 +280,7 @@ struct WorldLights
 struct World
 {
 	PLUGINBASE
+	using plugin_owner_tag = World;
 	static inline constexpr int32 ID = 7;
 	Object object;
 	LinkList localLights;	// these have positions (type >= 0x80)

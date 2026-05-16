@@ -88,6 +88,7 @@ int32 getMaxSupportedMaxAnisotropy(void);
 struct TexDictionary
 {
 	PLUGINBASE
+	using plugin_owner_tag = TexDictionary;
 	static inline constexpr int32 ID = 6;
 	Object object;
 	LinkList textures;
