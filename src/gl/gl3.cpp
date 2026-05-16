@@ -30,7 +30,7 @@ driverOpen(void *o, int32, int32)
 #ifdef RW_OPENGL
 	engine->driver[PLATFORM_GL3]->defaultPipeline = makeDefaultPipeline();
 #endif
-	engine->driver[PLATFORM_GL3]->rasterNativeOffset = nativeRasterOffset;
+	engine->driver[PLATFORM_GL3]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
 	engine->driver[PLATFORM_GL3]->rasterCreate       = rasterCreate;
 	engine->driver[PLATFORM_GL3]->rasterLock         = rasterLock;
 	engine->driver[PLATFORM_GL3]->rasterUnlock       = rasterUnlock;

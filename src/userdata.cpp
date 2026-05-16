@@ -35,21 +35,21 @@ UserDataArray::setString(int32 n, const char *s)
 }
 
 static void*
-createUserData(void *object, int32 offset, int32)
+createUserData(void *object, std::ptrdiff_t offset, int32)
 {
-	UserDataExtension *ext = PLUGINOFFSET(UserDataExtension, object, offset);
+	UserDataExtension *ext = (UserDataExtension*)((uint8*)object + offset);
 	ext->numArrays = 0;
 	ext->arrays = nil;
 	return object;
 }
 
 static void*
-destroyUserData(void *object, int32 offset, int32)
+destroyUserData(void *object, std::ptrdiff_t offset, int32)
 {
 	int32 i, j;
 	char **strar;
 	UserDataArray *a;
-	UserDataExtension *ext = PLUGINOFFSET(UserDataExtension, object, offset);
+	UserDataExtension *ext = (UserDataExtension*)((uint8*)object + offset);
 	a = ext->arrays;
 	for(i = 0; i < ext->numArrays; i++){
 		rwFree(a->name);
@@ -73,13 +73,13 @@ destroyUserData(void *object, int32 offset, int32)
 }
 
 static void*
-copyUserData(void *dst, void *src, int32 offset, int32)
+copyUserData(void *dst, void *src, std::ptrdiff_t offset, int32)
 {
 	int32 i, j;
 	char **srcstrar, **dststrar;
 	UserDataArray *srca, *dsta;
-	UserDataExtension *srcext = PLUGINOFFSET(UserDataExtension, src, offset);
-	UserDataExtension *dstext = PLUGINOFFSET(UserDataExtension, dst, offset);
+	UserDataExtension *srcext = (UserDataExtension*)((uint8*)src + offset);
+	UserDataExtension *dstext = (UserDataExtension*)((uint8*)dst + offset);
 	dstext->numArrays = srcext->numArrays;
 	dstext->arrays = (UserDataArray*)udMalloc(dstext->numArrays*sizeof(UserDataArray));
 	srca = srcext->arrays;
@@ -117,12 +117,12 @@ copyUserData(void *dst, void *src, int32 offset, int32)
 }
 
 static Stream*
-readUserData(Stream *stream, int32, void *object, int32 offset, int32)
+readUserData(Stream *stream, int32, void *object, std::ptrdiff_t offset, int32)
 {
 	int32 i, j;
 	char **strar;
 	UserDataArray *a;
-	UserDataExtension *ext = PLUGINOFFSET(UserDataExtension, object, offset);
+	UserDataExtension *ext = (UserDataExtension*)((uint8*)object + offset);
 	ext->numArrays = stream->readI32();
 	ext->arrays = (UserDataArray*)udMalloc(ext->numArrays*sizeof(UserDataArray));
 	a = ext->arrays;
@@ -157,13 +157,13 @@ readUserData(Stream *stream, int32, void *object, int32 offset, int32)
 }
 
 static Stream*
-writeUserData(Stream *stream, int32, void *object, int32 offset, int32)
+writeUserData(Stream *stream, int32, void *object, std::ptrdiff_t offset, int32)
 {
 	int32 len;
 	int32 i, j;
 	char **strar;
 	UserDataArray *a;
-	UserDataExtension *ext = PLUGINOFFSET(UserDataExtension, object, offset);
+	UserDataExtension *ext = (UserDataExtension*)((uint8*)object + offset);
 	stream->writeI32(ext->numArrays);
 	a = ext->arrays;
 	for(i = 0; i < ext->numArrays; i++){
@@ -194,14 +194,14 @@ writeUserData(Stream *stream, int32, void *object, int32 offset, int32)
 }
 
 static int32
-getSizeUserData(void *object, int32 offset, int32)
+getSizeUserData(void *object, std::ptrdiff_t offset, int32)
 {
 	int32 len;
 	int32 i, j;
 	char **strar;
 	int32 size;
 	UserDataArray *a;
-	UserDataExtension *ext = PLUGINOFFSET(UserDataExtension, object, offset);
+	UserDataExtension *ext = (UserDataExtension*)((uint8*)object + offset);
 	if(ext->numArrays == 0)
 		return 0;
 	size = 4;	// numArrays
@@ -297,27 +297,27 @@ UserDataExtension::findIndex(const char *name) {
 int32 \
 UserDataArray::NAME##Add(TYPE *t, const char *name, int32 datatype, int32 numElements) \
 { \
-	return PLUGINOFFSET(UserDataExtension, t, userDataGlobals.NAME##Offset)->add(name, datatype, numElements); \
+	return plugin::extensionPtr(t, userDataGlobals.NAME##Offset)->add(name, datatype, numElements); \
 } \
 void \
 UserDataArray::NAME##Remove(TYPE *t, int32 n) \
 { \
-	PLUGINOFFSET(UserDataExtension, t, userDataGlobals.NAME##Offset)->remove(n); \
+	plugin::extensionPtr(t, userDataGlobals.NAME##Offset)->remove(n); \
 } \
 int32 \
 UserDataArray::NAME##GetCount(TYPE *t) \
 { \
-	return PLUGINOFFSET(UserDataExtension, t, userDataGlobals.NAME##Offset)->getCount(); \
+	return plugin::extensionPtr(t, userDataGlobals.NAME##Offset)->getCount(); \
 } \
 UserDataArray* \
 UserDataArray::NAME##Get(TYPE *t, int32 n) \
 { \
-	return PLUGINOFFSET(UserDataExtension, t, userDataGlobals.NAME##Offset)->get(n); \
+	return plugin::extensionPtr(t, userDataGlobals.NAME##Offset)->get(n); \
 } \
 int32 \
 UserDataArray::NAME##FindIndex(TYPE *t, const char *name) \
 { \
-	return PLUGINOFFSET(UserDataExtension, t, userDataGlobals.NAME##Offset)->findIndex(name); \
+	return plugin::extensionPtr(t, userDataGlobals.NAME##Offset)->findIndex(name); \
 }
 
 ACCESSOR(Geometry, geometry)
@@ -327,12 +327,12 @@ ACCESSOR(Light, light)
 ACCESSOR(Material, material)
 ACCESSOR(Texture, texture)
 
-UserDataExtension *UserDataExtension::get(Geometry *geo) { return PLUGINOFFSET(UserDataExtension, geo, userDataGlobals.geometryOffset); }
-UserDataExtension *UserDataExtension::get(Frame *frame) { return PLUGINOFFSET(UserDataExtension, frame, userDataGlobals.frameOffset); }
-UserDataExtension *UserDataExtension::get(Camera *cam) { return PLUGINOFFSET(UserDataExtension, cam, userDataGlobals.cameraOffset); }
-UserDataExtension *UserDataExtension::get(Light *light) { return PLUGINOFFSET(UserDataExtension, light, userDataGlobals.lightOffset); }
-UserDataExtension *UserDataExtension::get(Material *mat) { return PLUGINOFFSET(UserDataExtension, mat, userDataGlobals.materialOffset); }
-UserDataExtension *UserDataExtension::get(Texture *tex) { return PLUGINOFFSET(UserDataExtension, tex, userDataGlobals.textureOffset); }
+UserDataExtension *UserDataExtension::get(Geometry *geo) { return plugin::extensionPtr(geo, userDataGlobals.geometryOffset); }
+UserDataExtension *UserDataExtension::get(Frame *frame) { return plugin::extensionPtr(frame, userDataGlobals.frameOffset); }
+UserDataExtension *UserDataExtension::get(Camera *cam) { return plugin::extensionPtr(cam, userDataGlobals.cameraOffset); }
+UserDataExtension *UserDataExtension::get(Light *light) { return plugin::extensionPtr(light, userDataGlobals.lightOffset); }
+UserDataExtension *UserDataExtension::get(Material *mat) { return plugin::extensionPtr(mat, userDataGlobals.materialOffset); }
+UserDataExtension *UserDataExtension::get(Texture *tex) { return plugin::extensionPtr(tex, userDataGlobals.textureOffset); }
 
 void
 registerUserDataPlugin(void)
@@ -345,38 +345,36 @@ registerUserDataPlugin(void)
 		auto& reg = ObjectRegistry<Geometry>::instance();
 		PluginLifecycle lc{
 			.construct = [](void* o, std::ptrdiff_t off) {
-				createUserData(o, static_cast<int32>(off), 0);
+				createUserData(o, off, 0);
 			},
 			.destruct = [](void* o, std::ptrdiff_t off) {
-				destroyUserData(o, static_cast<int32>(off), 0);
+				destroyUserData(o, off, 0);
 			},
 			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-				copyUserData(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+				copyUserData(d, const_cast<void*>(s), off, 0);
 			},
 		};
 		PluginStream st{
 			.read = [](Stream& s, std::int32_t len, void* o, std::ptrdiff_t off)
 			        -> std::expected<void, StreamPluginError> {
-				auto* r = readUserData(&s, len, o, static_cast<int32>(off), 0);
+				auto* r = readUserData(&s, len, o, off, 0);
 				return r ? std::expected<void, StreamPluginError>{} :
 				           std::unexpected(StreamPluginError::ioFailure);
 			},
 			.write = [](Stream& s, std::int32_t len, const void* o, std::ptrdiff_t off)
 			         -> std::expected<void, StreamPluginError> {
-				auto* r = writeUserData(&s, len,
-				    const_cast<void*>(o), static_cast<int32>(off), 0);
+				auto* r = writeUserData(&s, len, const_cast<void*>(o), off, 0);
 				return r ? std::expected<void, StreamPluginError>{} :
 				           std::unexpected(StreamPluginError::ioFailure);
 			},
 			.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
-				return getSizeUserData(const_cast<void*>(o),
-				    static_cast<int32>(off), 0);
+				return getSizeUserData(const_cast<void*>(o), off, 0);
 			},
 		};
 		auto result = reg.registerExtension<UserDataExtension>(
 		    fromRaw(ID_USERDATA), std::move(lc), std::move(st), "userdata-geometry");
 		if(result)
-			userDataGlobals.geometryOffset = static_cast<int32>(result->value());
+			userDataGlobals.geometryOffset = *result;
 	}
 
 	// Frame — fully migrated to the typed plugin layer (hanim + userdata both moved).
@@ -385,38 +383,36 @@ registerUserDataPlugin(void)
 		auto& reg = ObjectRegistry<Frame>::instance();
 		PluginLifecycle lc{
 			.construct = [](void* o, std::ptrdiff_t off) {
-				createUserData(o, static_cast<int32>(off), 0);
+				createUserData(o, off, 0);
 			},
 			.destruct = [](void* o, std::ptrdiff_t off) {
-				destroyUserData(o, static_cast<int32>(off), 0);
+				destroyUserData(o, off, 0);
 			},
 			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-				copyUserData(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+				copyUserData(d, const_cast<void*>(s), off, 0);
 			},
 		};
 		PluginStream st{
 			.read = [](Stream& s, std::int32_t len, void* o, std::ptrdiff_t off)
 			        -> std::expected<void, StreamPluginError> {
-				auto* r = readUserData(&s, len, o, static_cast<int32>(off), 0);
+				auto* r = readUserData(&s, len, o, off, 0);
 				return r ? std::expected<void, StreamPluginError>{} :
 				           std::unexpected(StreamPluginError::ioFailure);
 			},
 			.write = [](Stream& s, std::int32_t len, const void* o, std::ptrdiff_t off)
 			         -> std::expected<void, StreamPluginError> {
-				auto* r = writeUserData(&s, len,
-				    const_cast<void*>(o), static_cast<int32>(off), 0);
+				auto* r = writeUserData(&s, len, const_cast<void*>(o), off, 0);
 				return r ? std::expected<void, StreamPluginError>{} :
 				           std::unexpected(StreamPluginError::ioFailure);
 			},
 			.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
-				return getSizeUserData(const_cast<void*>(o),
-				    static_cast<int32>(off), 0);
+				return getSizeUserData(const_cast<void*>(o), off, 0);
 			},
 		};
 		auto result = reg.registerExtension<UserDataExtension>(
 		    fromRaw(ID_USERDATA), std::move(lc), std::move(st), "userdata-frame");
 		if(result)
-			userDataGlobals.frameOffset = static_cast<int32>(result->value());
+			userDataGlobals.frameOffset = *result;
 	}
 
 	// Camera — fully migrated to the typed plugin layer.
@@ -425,38 +421,36 @@ registerUserDataPlugin(void)
 		auto& reg = ObjectRegistry<Camera>::instance();
 		PluginLifecycle lc{
 			.construct = [](void* o, std::ptrdiff_t off) {
-				createUserData(o, static_cast<int32>(off), 0);
+				createUserData(o, off, 0);
 			},
 			.destruct = [](void* o, std::ptrdiff_t off) {
-				destroyUserData(o, static_cast<int32>(off), 0);
+				destroyUserData(o, off, 0);
 			},
 			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-				copyUserData(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+				copyUserData(d, const_cast<void*>(s), off, 0);
 			},
 		};
 		PluginStream st{
 			.read = [](Stream& s, std::int32_t len, void* o, std::ptrdiff_t off)
 			        -> std::expected<void, StreamPluginError> {
-				auto* r = readUserData(&s, len, o, static_cast<int32>(off), 0);
+				auto* r = readUserData(&s, len, o, off, 0);
 				return r ? std::expected<void, StreamPluginError>{} :
 				           std::unexpected(StreamPluginError::ioFailure);
 			},
 			.write = [](Stream& s, std::int32_t len, const void* o, std::ptrdiff_t off)
 			         -> std::expected<void, StreamPluginError> {
-				auto* r = writeUserData(&s, len,
-				    const_cast<void*>(o), static_cast<int32>(off), 0);
+				auto* r = writeUserData(&s, len, const_cast<void*>(o), off, 0);
 				return r ? std::expected<void, StreamPluginError>{} :
 				           std::unexpected(StreamPluginError::ioFailure);
 			},
 			.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
-				return getSizeUserData(const_cast<void*>(o),
-				    static_cast<int32>(off), 0);
+				return getSizeUserData(const_cast<void*>(o), off, 0);
 			},
 		};
 		auto result = reg.registerExtension<UserDataExtension>(
 		    fromRaw(ID_USERDATA), std::move(lc), std::move(st), "userdata-camera");
 		if(result)
-			userDataGlobals.cameraOffset = static_cast<int32>(result->value());
+			userDataGlobals.cameraOffset = *result;
 	}
 
 	// Light — fully migrated to the typed plugin layer.
@@ -465,38 +459,36 @@ registerUserDataPlugin(void)
 		auto& reg = ObjectRegistry<Light>::instance();
 		PluginLifecycle lc{
 			.construct = [](void* o, std::ptrdiff_t off) {
-				createUserData(o, static_cast<int32>(off), 0);
+				createUserData(o, off, 0);
 			},
 			.destruct = [](void* o, std::ptrdiff_t off) {
-				destroyUserData(o, static_cast<int32>(off), 0);
+				destroyUserData(o, off, 0);
 			},
 			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-				copyUserData(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+				copyUserData(d, const_cast<void*>(s), off, 0);
 			},
 		};
 		PluginStream st{
 			.read = [](Stream& s, std::int32_t len, void* o, std::ptrdiff_t off)
 			        -> std::expected<void, StreamPluginError> {
-				auto* r = readUserData(&s, len, o, static_cast<int32>(off), 0);
+				auto* r = readUserData(&s, len, o, off, 0);
 				return r ? std::expected<void, StreamPluginError>{} :
 				           std::unexpected(StreamPluginError::ioFailure);
 			},
 			.write = [](Stream& s, std::int32_t len, const void* o, std::ptrdiff_t off)
 			         -> std::expected<void, StreamPluginError> {
-				auto* r = writeUserData(&s, len,
-				    const_cast<void*>(o), static_cast<int32>(off), 0);
+				auto* r = writeUserData(&s, len, const_cast<void*>(o), off, 0);
 				return r ? std::expected<void, StreamPluginError>{} :
 				           std::unexpected(StreamPluginError::ioFailure);
 			},
 			.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
-				return getSizeUserData(const_cast<void*>(o),
-				    static_cast<int32>(off), 0);
+				return getSizeUserData(const_cast<void*>(o), off, 0);
 			},
 		};
 		auto result = reg.registerExtension<UserDataExtension>(
 		    fromRaw(ID_USERDATA), std::move(lc), std::move(st), "userdata-light");
 		if(result)
-			userDataGlobals.lightOffset = static_cast<int32>(result->value());
+			userDataGlobals.lightOffset = *result;
 	}
 
 	// Material — fully migrated to the typed plugin layer.
@@ -505,38 +497,36 @@ registerUserDataPlugin(void)
 		auto& reg = ObjectRegistry<Material>::instance();
 		PluginLifecycle lc{
 			.construct = [](void* o, std::ptrdiff_t off) {
-				createUserData(o, static_cast<int32>(off), 0);
+				createUserData(o, off, 0);
 			},
 			.destruct = [](void* o, std::ptrdiff_t off) {
-				destroyUserData(o, static_cast<int32>(off), 0);
+				destroyUserData(o, off, 0);
 			},
 			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-				copyUserData(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+				copyUserData(d, const_cast<void*>(s), off, 0);
 			},
 		};
 		PluginStream st{
 			.read = [](Stream& s, std::int32_t len, void* o, std::ptrdiff_t off)
 			        -> std::expected<void, StreamPluginError> {
-				auto* r = readUserData(&s, len, o, static_cast<int32>(off), 0);
+				auto* r = readUserData(&s, len, o, off, 0);
 				return r ? std::expected<void, StreamPluginError>{} :
 				           std::unexpected(StreamPluginError::ioFailure);
 			},
 			.write = [](Stream& s, std::int32_t len, const void* o, std::ptrdiff_t off)
 			         -> std::expected<void, StreamPluginError> {
-				auto* r = writeUserData(&s, len,
-				    const_cast<void*>(o), static_cast<int32>(off), 0);
+				auto* r = writeUserData(&s, len, const_cast<void*>(o), off, 0);
 				return r ? std::expected<void, StreamPluginError>{} :
 				           std::unexpected(StreamPluginError::ioFailure);
 			},
 			.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
-				return getSizeUserData(const_cast<void*>(o),
-				    static_cast<int32>(off), 0);
+				return getSizeUserData(const_cast<void*>(o), off, 0);
 			},
 		};
 		auto result = reg.registerExtension<UserDataExtension>(
 		    fromRaw(ID_USERDATA), std::move(lc), std::move(st), "userdata-material");
 		if(result)
-			userDataGlobals.materialOffset = static_cast<int32>(result->value());
+			userDataGlobals.materialOffset = *result;
 	}
 
 	// Texture is fully migrated to the typed plugin layer.
@@ -545,38 +535,36 @@ registerUserDataPlugin(void)
 		auto& reg = ObjectRegistry<Texture>::instance();
 		PluginLifecycle lc{
 			.construct = [](void* o, std::ptrdiff_t off) {
-				createUserData(o, static_cast<int32>(off), 0);
+				createUserData(o, off, 0);
 			},
 			.destruct = [](void* o, std::ptrdiff_t off) {
-				destroyUserData(o, static_cast<int32>(off), 0);
+				destroyUserData(o, off, 0);
 			},
 			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-				copyUserData(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+				copyUserData(d, const_cast<void*>(s), off, 0);
 			},
 		};
 		PluginStream st{
 			.read = [](Stream& s, std::int32_t len, void* o, std::ptrdiff_t off)
 			        -> std::expected<void, StreamPluginError> {
-				auto* r = readUserData(&s, len, o, static_cast<int32>(off), 0);
+				auto* r = readUserData(&s, len, o, off, 0);
 				return r ? std::expected<void, StreamPluginError>{} :
 				           std::unexpected(StreamPluginError::ioFailure);
 			},
 			.write = [](Stream& s, std::int32_t len, const void* o, std::ptrdiff_t off)
 			         -> std::expected<void, StreamPluginError> {
-				auto* r = writeUserData(&s, len,
-				    const_cast<void*>(o), static_cast<int32>(off), 0);
+				auto* r = writeUserData(&s, len, const_cast<void*>(o), off, 0);
 				return r ? std::expected<void, StreamPluginError>{} :
 				           std::unexpected(StreamPluginError::ioFailure);
 			},
 			.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
-				return getSizeUserData(const_cast<void*>(o),
-				    static_cast<int32>(off), 0);
+				return getSizeUserData(const_cast<void*>(o), off, 0);
 			},
 		};
 		auto result = reg.registerExtension<UserDataExtension>(
 		    fromRaw(ID_USERDATA), std::move(lc), std::move(st), "userdata-texture");
 		if(result)
-			userDataGlobals.textureOffset = static_cast<int32>(result->value());
+			userDataGlobals.textureOffset = *result;
 	}
 }
 

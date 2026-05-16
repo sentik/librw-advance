@@ -24,7 +24,7 @@
 namespace rw {
 namespace gl3 {
 
-int32 nativeRasterOffset;
+plugin::PluginOffset<Raster, Gl3Raster> nativeRasterOffset;
 
 static uint32
 getLevelSize(Raster *raster, int32 level)
@@ -813,9 +813,9 @@ rasterToImage(Raster *raster)
 }
 
 static void*
-createNativeRaster(void *object, int32 offset, int32)
+createNativeRaster(void *object, std::ptrdiff_t offset, int32)
 {
-	Gl3Raster *ras = PLUGINOFFSET(Gl3Raster, object, offset);
+	Gl3Raster *ras = (Gl3Raster*)((uint8*)object + offset);
 	ras->texid = 0;
 	ras->fbo = 0;
 	ras->fboMate = nil;
@@ -826,10 +826,10 @@ createNativeRaster(void *object, int32 offset, int32)
 void evictRaster(Raster *raster);
 
 static void*
-destroyNativeRaster(void *object, int32 offset, int32)
+destroyNativeRaster(void *object, std::ptrdiff_t offset, int32)
 {
 	Raster *raster = (Raster*)object;
-	Gl3Raster *natras = PLUGINOFFSET(Gl3Raster, object, offset);
+	Gl3Raster *natras = (Gl3Raster*)((uint8*)object + offset);
 #ifdef RW_OPENGL
 	evictRaster(raster);
 	switch(raster->type){
@@ -884,9 +884,9 @@ destroyNativeRaster(void *object, int32 offset, int32)
 }
 
 static void*
-copyNativeRaster(void *dst, void *, int32 offset, int32)
+copyNativeRaster(void *dst, void *, std::ptrdiff_t offset, int32)
 {
-	Gl3Raster *d = PLUGINOFFSET(Gl3Raster, dst, offset);
+	Gl3Raster *d = (Gl3Raster*)((uint8*)dst + offset);
 	d->texid = 0;
 	d->fbo = 0;
 	d->fboMate = nil;
@@ -1044,19 +1044,19 @@ void registerNativeRaster(void)
 	auto result = reg.registerExtension<Gl3Raster>(fromRaw(ID_RASTERGL3),
 		PluginLifecycle{
 			.construct = [](void* o, std::ptrdiff_t off) {
-				createNativeRaster(o, static_cast<int32>(off), 0);
+				createNativeRaster(o, off, 0);
 			},
 			.destruct = [](void* o, std::ptrdiff_t off) {
-				destroyNativeRaster(o, static_cast<int32>(off), 0);
+				destroyNativeRaster(o, off, 0);
 			},
 			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-				copyNativeRaster(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+				copyNativeRaster(d, const_cast<void*>(s), off, 0);
 			},
 		},
 		PluginStream{},
 		"nativeraster-gl3");
 	if(result)
-		nativeRasterOffset = static_cast<int32>(result->value());
+		nativeRasterOffset = *result;
 }
 
 }

@@ -10,6 +10,8 @@
 not implemented
 #endif
 #endif
+#include "rw/plugin/offset.h"
+#include "../rwraster.h"
 
 namespace rw {
 
@@ -299,9 +301,9 @@ Texture *readNativeTexture(Stream *stream);
 void writeNativeTexture(Texture *tex, Stream *stream);
 uint32 getSizeNativeTexture(Texture *tex);
 
-extern int32 nativeRasterOffset;
+extern plugin::PluginOffset<Raster, Gl3Raster> nativeRasterOffset;
 void registerNativeRaster(void);
-#define GETGL3RASTEREXT(raster) PLUGINOFFSET(Gl3Raster, raster, rw::gl3::nativeRasterOffset)
+#define GETGL3RASTEREXT(raster) rw::plugin::extensionPtr(raster, rw::gl3::nativeRasterOffset)
 
 }
 }

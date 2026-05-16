@@ -41,7 +41,7 @@ driverOpen(void *o, int32, int32)
 #endif
 	engine->driver[PLATFORM_D3D9]->defaultPipeline = makeDefaultPipeline();
 
-	engine->driver[PLATFORM_D3D9]->rasterNativeOffset = nativeRasterOffset;
+	engine->driver[PLATFORM_D3D9]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
 	engine->driver[PLATFORM_D3D9]->rasterCreate       = rasterCreate;
 	engine->driver[PLATFORM_D3D9]->rasterLock         = rasterLock;
 	engine->driver[PLATFORM_D3D9]->rasterUnlock       = rasterUnlock;
@@ -67,7 +67,7 @@ registerPlatformPlugins(void)
 	Driver::registerPlugin(PLATFORM_D3D9, 0, PLATFORM_D3D9,
 	                       driverOpen, driverClose);
 	// shared between D3D8 and 9
-	if(nativeRasterOffset == 0)
+	if(!nativeRasterOffset)
 		registerNativeRaster();
 }
 

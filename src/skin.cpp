@@ -29,19 +29,19 @@
 
 namespace rw {
 
-SkinGlobals skinGlobals = { 0, 0, { nil }, nil };
+SkinGlobals skinGlobals = { {}, {}, { nil }, nil };
 
 static void*
-createSkin(void *object, int32 offset, int32)
+createSkin(void *object, std::ptrdiff_t offset, int32)
 {
-	*PLUGINOFFSET(Skin*, object, offset) = nil;
+	*(Skin**)((uint8*)object + offset) = nil;
 	return object;
 }
 
 static void*
-destroySkin(void *object, int32 offset, int32)
+destroySkin(void *object, std::ptrdiff_t offset, int32)
 {
-	Skin *skin = *PLUGINOFFSET(Skin*, object, offset);
+	Skin *skin = *(Skin**)((uint8*)object + offset);
 	if(skin){
 		rwFree(skin->data);
 		rwFree(skin->remapIndices);
@@ -52,16 +52,16 @@ destroySkin(void *object, int32 offset, int32)
 }
 
 static void*
-copySkin(void *dst, void *src, int32 offset, int32)
+copySkin(void *dst, void *src, std::ptrdiff_t offset, int32)
 {
-	Skin *srcskin = *PLUGINOFFSET(Skin*, src, offset);
+	Skin *srcskin = *(Skin**)((uint8*)src + offset);
 	if(srcskin == nil)
 		return dst;
 	Geometry *geometry = (Geometry*)src;
 	assert(geometry->instData == nil);
 	assert(((Geometry*)src)->numVertices == ((Geometry*)dst)->numVertices);
 	Skin *dstskin = rwNewT(Skin, 1, MEMDUR_EVENT | ID_SKIN);
-	*PLUGINOFFSET(Skin*, dst, offset) = dstskin;
+	*(Skin**)((uint8*)dst + offset) = dstskin;
 	dstskin->numBones = srcskin->numBones;
 	dstskin->numUsedBones = srcskin->numUsedBones;
 	dstskin->numWeights = srcskin->numWeights;
@@ -118,7 +118,7 @@ skinSplitDataSize(Skin *skin)
 }
 
 static Stream*
-readSkin(Stream *stream, int32 len, void *object, int32 offset, int32)
+readSkin(Stream *stream, int32 len, void *object, std::ptrdiff_t offset, int32)
 {
 	uint8 header[4];
 	Geometry *geometry = (Geometry*)object;
@@ -126,11 +126,11 @@ readSkin(Stream *stream, int32 len, void *object, int32 offset, int32)
 	if(geometry->instData){
 		// TODO: function pointers
 		if(geometry->instData->platform == PLATFORM_PS2)
-			return ps2::readNativeSkin(stream, len, object, offset);
+			return ps2::readNativeSkin(stream, len, object, static_cast<int32>(offset));
 		else if(geometry->instData->platform == PLATFORM_WDGL)
-			return wdgl::readNativeSkin(stream, len, object, offset);
+			return wdgl::readNativeSkin(stream, len, object, static_cast<int32>(offset));
 		else if(geometry->instData->platform == PLATFORM_XBOX)
-			return xbox::readNativeSkin(stream, len, object, offset);
+			return xbox::readNativeSkin(stream, len, object, static_cast<int32>(offset));
 		else{
 			assert(0 && "unsupported native skin platform");
 			return nil;
@@ -140,7 +140,7 @@ readSkin(Stream *stream, int32 len, void *object, int32 offset, int32)
 	stream->read8(header, 4);  // numBones, numUsedBones,
 	                          // numWeights, unused
 	Skin *skin = rwNewT(Skin, 1, MEMDUR_EVENT | ID_SKIN);
-	*PLUGINOFFSET(Skin*, geometry, offset) = skin;
+	*(Skin**)((uint8*)geometry + offset) = skin;
 
 	// numUsedBones and numWeights appear in/after 34003
 	// but not in/before 33002 (probably rw::version >= 0x34000)
@@ -178,25 +178,25 @@ readSkin(Stream *stream, int32 len, void *object, int32 offset, int32)
 }
 
 static Stream*
-writeSkin(Stream *stream, int32 len, void *object, int32 offset, int32)
+writeSkin(Stream *stream, int32 len, void *object, std::ptrdiff_t offset, int32)
 {
 	uint8 header[4];
 	Geometry *geometry = (Geometry*)object;
 
 	if(geometry->instData){
 		if(geometry->instData->platform == PLATFORM_PS2)
-			return ps2::writeNativeSkin(stream, len, object, offset);
+			return ps2::writeNativeSkin(stream, len, object, static_cast<int32>(offset));
 		else if(geometry->instData->platform == PLATFORM_WDGL)
-			return wdgl::writeNativeSkin(stream, len, object, offset);
+			return wdgl::writeNativeSkin(stream, len, object, static_cast<int32>(offset));
 		else if(geometry->instData->platform == PLATFORM_XBOX)
-			return xbox::writeNativeSkin(stream, len, object, offset);
+			return xbox::writeNativeSkin(stream, len, object, static_cast<int32>(offset));
 		else{
 			assert(0 && "unsupported native skin platform");
 			return nil;
 		}
 	}
 
-	Skin *skin = *PLUGINOFFSET(Skin*, object, offset);
+	Skin *skin = *(Skin**)((uint8*)object + offset);
 	// not sure which version introduced the new format
 	bool oldFormat = version < 0x34000;
 	header[0] = skin->numBones;
@@ -225,17 +225,17 @@ writeSkin(Stream *stream, int32 len, void *object, int32 offset, int32)
 }
 
 static int32
-getSizeSkin(void *object, int32 offset, int32)
+getSizeSkin(void *object, std::ptrdiff_t offset, int32)
 {
 	Geometry *geometry = (Geometry*)object;
 
 	if(geometry->instData){
 		if(geometry->instData->platform == PLATFORM_PS2)
-			return ps2::getSizeNativeSkin(object, offset);
+			return ps2::getSizeNativeSkin(object, static_cast<int32>(offset));
 		if(geometry->instData->platform == PLATFORM_WDGL)
-			return wdgl::getSizeNativeSkin(object, offset);
+			return wdgl::getSizeNativeSkin(object, static_cast<int32>(offset));
 		if(geometry->instData->platform == PLATFORM_XBOX)
-			return xbox::getSizeNativeSkin(object, offset);
+			return xbox::getSizeNativeSkin(object, static_cast<int32>(offset));
 		if(geometry->instData->platform == PLATFORM_D3D8)
 			return -1;
 		if(geometry->instData->platform == PLATFORM_D3D9)
@@ -243,7 +243,7 @@ getSizeSkin(void *object, int32 offset, int32)
 		assert(0 && "unsupported native skin platform");
 	}
 
-	Skin *skin = *PLUGINOFFSET(Skin*, object, offset);
+	Skin *skin = *(Skin**)((uint8*)object + offset);
 	if(skin == nil)
 		return -1;
 
@@ -268,7 +268,7 @@ readSkinLegacy(Stream *stream, int32 len, void *object, int32, int32)
 	assert(numVertices == geometry->numVertices);
 
 	Skin *skin = rwNewT(Skin, 1, MEMDUR_EVENT | ID_SKIN);
-	*PLUGINOFFSET(Skin*, geometry, skinGlobals.geoOffset) = skin;
+	plugin::extension<Geometry, Skin*>(*geometry, skinGlobals.geoOffset) = skin;
 	skin->init(numBones, numBones, numVertices);
 	skin->legacyType = 1;
 	skin->numWeights = 4;
@@ -325,22 +325,22 @@ skinAlways(void *object, int32, int32)
 }
 
 static void*
-createSkinAtm(void *object, int32 offset, int32)
+createSkinAtm(void *object, std::ptrdiff_t offset, int32)
 {
-	*PLUGINOFFSET(void*, object, offset) = nil;
+	*(HAnimHierarchy**)((uint8*)object + offset) = nil;
 	return object;
 }
 
 static void*
-destroySkinAtm(void *object, int32 offset, int32)
+destroySkinAtm(void *object, std::ptrdiff_t offset, int32)
 {
 	return object;
 }
 
 static void*
-copySkinAtm(void *dst, void *src, int32 offset, int32)
+copySkinAtm(void *dst, void *src, std::ptrdiff_t offset, int32)
 {
-	*PLUGINOFFSET(void*, dst, offset) = *PLUGINOFFSET(void*, src, offset);
+	*(HAnimHierarchy**)((uint8*)dst + offset) = *(HAnimHierarchy**)((uint8*)src + offset);
 	return dst;
 }
 
@@ -385,33 +385,33 @@ registerSkinPlugin(void)
 		auto result = reg.registerExtension<Skin*>(fromRaw(ID_SKIN),
 			PluginLifecycle{
 				.construct = [](void* o, std::ptrdiff_t off) {
-					createSkin(o, static_cast<int32>(off), 0);
+					createSkin(o, off, 0);
 				},
 				.destruct = [](void* o, std::ptrdiff_t off) {
-					destroySkin(o, static_cast<int32>(off), 0);
+					destroySkin(o, off, 0);
 				},
 				.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-					copySkin(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+					copySkin(d, const_cast<void*>(s), off, 0);
 				},
 			},
 			PluginStream{
 				.read = [](rw::Stream& stream, std::int32_t len, void* o, std::ptrdiff_t off)
 					-> std::expected<void, StreamPluginError> {
-					if(readSkin(&stream, len, o, static_cast<int32>(off), 0)) return {};
+					if(readSkin(&stream, len, o, off, 0)) return {};
 					return std::unexpected(StreamPluginError::callbackFailed);
 				},
 				.write = [](rw::Stream& stream, std::int32_t len, const void* o, std::ptrdiff_t off)
 					-> std::expected<void, StreamPluginError> {
-					writeSkin(&stream, len, const_cast<void*>(o), static_cast<int32>(off), 0);
+					writeSkin(&stream, len, const_cast<void*>(o), off, 0);
 					return {};
 				},
 				.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
-					return getSizeSkin(const_cast<void*>(o), static_cast<int32>(off), 0);
+					return getSizeSkin(const_cast<void*>(o), off, 0);
 				},
 			},
 			"skin-geometry");
 		if(result)
-			skinGlobals.geoOffset = static_cast<int32>(result->value());
+			skinGlobals.geoOffset = *result;
 	}
 	{
 		using namespace rw::plugin;
@@ -419,10 +419,10 @@ registerSkinPlugin(void)
 		auto result = reg.registerExtension<HAnimHierarchy*>(fromRaw(ID_SKIN),
 		    PluginLifecycle{
 		        .construct = [](void* o, std::ptrdiff_t off) {
-		            createSkinAtm(o, static_cast<int32>(off), 0);
+		            createSkinAtm(o, off, 0);
 		        },
 		        .copy = [](void* d, const void* s, std::ptrdiff_t off) {
-		            copySkinAtm(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+		            copySkinAtm(d, const_cast<void*>(s), off, 0);
 		        },
 		    },
 		    PluginStream{
@@ -440,7 +440,7 @@ registerSkinPlugin(void)
 		    },
 		    "skin-atomic");
 		if(result)
-			skinGlobals.atomicOffset = static_cast<int32>(result->value());
+			skinGlobals.atomicOffset = *result;
 	}
 }
 

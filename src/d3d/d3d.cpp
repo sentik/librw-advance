@@ -270,7 +270,7 @@ destroyTexture(void *texture)
 
 // Native Raster
 
-int32 nativeRasterOffset;
+plugin::PluginOffset<Raster, D3dRaster> nativeRasterOffset;
 
 struct RasterFormatInfo
 {
@@ -1020,9 +1020,9 @@ setTexels(Raster *raster, void *texels, int32 level)
 }
 
 static void*
-createNativeRaster(void *object, int32 offset, int32)
+createNativeRaster(void *object, std::ptrdiff_t offset, int32)
 {
-	D3dRaster *raster = PLUGINOFFSET(D3dRaster, object, offset);
+	D3dRaster *raster = (D3dRaster*)((uint8*)object + offset);
 	raster->texture = nil;
 	raster->palette = nil;
 	raster->lockedSurf = nil;
@@ -1033,10 +1033,10 @@ createNativeRaster(void *object, int32 offset, int32)
 }
 
 static void*
-destroyNativeRaster(void *object, int32 offset, int32)
+destroyNativeRaster(void *object, std::ptrdiff_t offset, int32)
 {
 	Raster *raster = (Raster*)object;
-	D3dRaster *natras = PLUGINOFFSET(D3dRaster, raster, offset);
+	D3dRaster *natras = (D3dRaster*)((uint8*)raster + offset);
 #ifdef RW_D3D9
 	removeVidmemRaster(raster);
 	evictD3D9Raster(raster);
@@ -1065,9 +1065,9 @@ destroyNativeRaster(void *object, int32 offset, int32)
 }
 
 static void*
-copyNativeRaster(void *dst, void *, int32 offset, int32)
+copyNativeRaster(void *dst, void *, std::ptrdiff_t offset, int32)
 {
-	D3dRaster *raster = PLUGINOFFSET(D3dRaster, dst, offset);
+	D3dRaster *raster = (D3dRaster*)((uint8*)dst + offset);
 	raster->texture = nil;
 	raster->palette = nil;
 	raster->lockedSurf = nil;
@@ -1085,19 +1085,19 @@ registerNativeRaster(void)
 	auto result = reg.registerExtension<D3dRaster>(fromRaw(ID_RASTERD3D9),
 		PluginLifecycle{
 			.construct = [](void* o, std::ptrdiff_t off) {
-				createNativeRaster(o, static_cast<int32>(off), 0);
+				createNativeRaster(o, off, 0);
 			},
 			.destruct = [](void* o, std::ptrdiff_t off) {
-				destroyNativeRaster(o, static_cast<int32>(off), 0);
+				destroyNativeRaster(o, off, 0);
 			},
 			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-				copyNativeRaster(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+				copyNativeRaster(d, const_cast<void*>(s), off, 0);
 			},
 		},
 		PluginStream{},
 		"nativeraster-d3d9");
 	if(result)
-		nativeRasterOffset = static_cast<int32>(result->value());
+		nativeRasterOffset = *result;
 }
 
 }

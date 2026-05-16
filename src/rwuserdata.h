@@ -1,3 +1,5 @@
+#include "rw/plugin/offset.h"
+
 namespace rw {
 
 enum UserDataType
@@ -80,12 +82,12 @@ struct UserDataExtension
 
 struct UserDataGlobals
 {
-	int32 geometryOffset;
-	int32 frameOffset;
-	int32 cameraOffset;
-	int32 lightOffset;
-	int32 materialOffset;
-	int32 textureOffset;
+	plugin::PluginOffset<Geometry,      UserDataExtension> geometryOffset;
+	plugin::PluginOffset<Frame,         UserDataExtension> frameOffset;
+	plugin::PluginOffset<Camera,        UserDataExtension> cameraOffset;
+	plugin::PluginOffset<Light,         UserDataExtension> lightOffset;
+	plugin::PluginOffset<Material,      UserDataExtension> materialOffset;
+	plugin::PluginOffset<Texture,       UserDataExtension> textureOffset;
 };
 extern UserDataGlobals userDataGlobals;
 

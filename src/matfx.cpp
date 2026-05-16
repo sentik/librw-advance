@@ -36,23 +36,23 @@ RGBA MatFX::envMapColor = { 255, 255, 255, 255 };
 // Atomic
 
 static void*
-createAtomicMatFX(void *object, int32 offset, int32)
+createAtomicMatFX(void *object, std::ptrdiff_t offset, int32)
 {
-	*PLUGINOFFSET(int32, object, offset) = 0;
+	*(int32*)((uint8*)object + offset) = 0;
 	return object;
 }
 
 static void*
-copyAtomicMatFX(void *dst, void *src, int32 offset, int32)
+copyAtomicMatFX(void *dst, void *src, std::ptrdiff_t offset, int32)
 {
 	// don't call seteffects, it will override the pipeline
-	if(*PLUGINOFFSET(int32, src, offset))
-		*PLUGINOFFSET(int32, dst, offset) = 1;
+	if(*(int32*)((uint8*)src + offset))
+		*(int32*)((uint8*)dst + offset) = 1;
 	return dst;
 }
 
 static Stream*
-readAtomicMatFX(Stream *stream, int32, void *object, int32, int32)
+readAtomicMatFX(Stream *stream, int32, void *object, std::ptrdiff_t, int32)
 {
 	if(stream->readI32())
 		MatFX::enableEffects((Atomic*)object);
@@ -60,23 +60,23 @@ readAtomicMatFX(Stream *stream, int32, void *object, int32, int32)
 }
 
 static Stream*
-writeAtomicMatFX(Stream *stream, int32, void *object, int32 offset, int32)
+writeAtomicMatFX(Stream *stream, int32, void *object, std::ptrdiff_t offset, int32)
 {
-	stream->writeI32(*PLUGINOFFSET(int32, object, offset));
+	stream->writeI32(*(int32*)((uint8*)object + offset));
 	return stream;
 }
 
 static int32
-getSizeAtomicMatFX(void *object, int32 offset, int32)
+getSizeAtomicMatFX(void *object, std::ptrdiff_t offset, int32)
 {
-	int32 flag = *PLUGINOFFSET(int32, object, offset);
+	int32 flag = *(int32*)((uint8*)object + offset);
 	// TODO: not sure which version
 	return flag || rw::version < 0x34000 ? 4 : 0;
 }
 
 // Material
 
-MatFXGlobals matFXGlobals = { 0, 0, { nil }, nil };
+MatFXGlobals matFXGlobals = { {}, {}, { nil }, nil };
 
 // TODO: Frames and Matrices?
 static void
@@ -113,7 +113,7 @@ MatFX::setEffects(Material *mat, uint32 type)
 	if(matfx == nil){
 		matfx = rwNewT(MatFX, 1, MEMDUR_EVENT | ID_MATFX);
 		memset(matfx, 0, sizeof(MatFX));
-		*PLUGINOFFSET(MatFX*, mat, matFXGlobals.materialOffset) = matfx;
+		plugin::extension<Material, MatFX*>(*mat, matFXGlobals.materialOffset) = matfx;
 	}
 
 	if(matfx->type != 0 && matfx->type != type)
@@ -143,7 +143,7 @@ MatFX::setEffects(Material *mat, uint32 type)
 uint32
 MatFX::getEffects(const Material *m)
 {
-	MatFX *fx = *PLUGINOFFSET(MatFX*, m, matFXGlobals.materialOffset);
+	MatFX *fx = plugin::extension<Material, MatFX*>(*m, matFXGlobals.materialOffset);
 	if(fx)
 		return fx->type;
 	return 0;
@@ -152,7 +152,7 @@ MatFX::getEffects(const Material *m)
 MatFX*
 MatFX::get(const Material *m)
 {
-	return *PLUGINOFFSET(MatFX*, m, matFXGlobals.materialOffset);
+	return plugin::extension<Material, MatFX*>(*m, matFXGlobals.materialOffset);
 }
 
 int32
@@ -357,16 +357,16 @@ MatFX::getUVTransformMatrices(Matrix **base, Matrix **dual)
 }
 
 static void*
-createMaterialMatFX(void *object, int32 offset, int32)
+createMaterialMatFX(void *object, std::ptrdiff_t offset, int32)
 {
-	*PLUGINOFFSET(MatFX*, object, offset) = nil;
+	*(MatFX**)((uint8*)object + offset) = nil;
 	return object;
 }
 
 static void*
-destroyMaterialMatFX(void *object, int32 offset, int32)
+destroyMaterialMatFX(void *object, std::ptrdiff_t offset, int32)
 {
-	MatFX *matfx = *PLUGINOFFSET(MatFX*, object, offset);
+	MatFX *matfx = *(MatFX**)((uint8*)object + offset);
 	if(matfx){
 		clearMatFX(matfx);
 		rwFree(matfx);
@@ -375,13 +375,13 @@ destroyMaterialMatFX(void *object, int32 offset, int32)
 }
 
 static void*
-copyMaterialMatFX(void *dst, void *src, int32 offset, int32)
+copyMaterialMatFX(void *dst, void *src, std::ptrdiff_t offset, int32)
 {
-	MatFX *srcfx = *PLUGINOFFSET(MatFX*, src, offset);
+	MatFX *srcfx = *(MatFX**)((uint8*)src + offset);
 	if(srcfx == nil)
 		return dst;
 	MatFX *dstfx = rwNewT(MatFX, 1, MEMDUR_EVENT | ID_MATFX);
-	*PLUGINOFFSET(MatFX*, dst, offset) = dstfx;
+	*(MatFX**)((uint8*)dst + offset) = dstfx;
 	memcpy(dstfx, srcfx, sizeof(MatFX));
 	for(int i = 0; i < 2; i++)
 		switch(dstfx->fx[i].type){
@@ -406,7 +406,7 @@ copyMaterialMatFX(void *dst, void *src, int32 offset, int32)
 }
 
 static Stream*
-readMaterialMatFX(Stream *stream, int32, void *object, int32 offset, int32)
+readMaterialMatFX(Stream *stream, int32, void *object, std::ptrdiff_t offset, int32)
 {
 	Material *mat;
 	MatFX *matfx;
@@ -492,9 +492,9 @@ readMaterialMatFX(Stream *stream, int32, void *object, int32 offset, int32)
 }
 
 static Stream*
-writeMaterialMatFX(Stream *stream, int32, void *object, int32 offset, int32)
+writeMaterialMatFX(Stream *stream, int32, void *object, std::ptrdiff_t offset, int32)
 {
-	MatFX *matfx = *PLUGINOFFSET(MatFX*, object, offset);
+	MatFX *matfx = *(MatFX**)((uint8*)object + offset);
 
 	stream->writeU32(matfx->type);
 	for(int i = 0; i < 2; i++){
@@ -531,9 +531,9 @@ writeMaterialMatFX(Stream *stream, int32, void *object, int32 offset, int32)
 }
 
 static int32
-getSizeMaterialMatFX(void *object, int32 offset, int32)
+getSizeMaterialMatFX(void *object, std::ptrdiff_t offset, int32)
 {
-	MatFX *matfx = *PLUGINOFFSET(MatFX*, object, offset);
+	MatFX *matfx = *(MatFX**)((uint8*)object + offset);
 	if(matfx == nil)
 		return -1;
 	int32 size = 4 + 4 + 4;
@@ -571,7 +571,7 @@ getSizeMaterialMatFX(void *object, int32 offset, int32)
 void
 MatFX::enableEffects(Atomic *atomic)
 {
-	*PLUGINOFFSET(int32, atomic, matFXGlobals.atomicOffset) = 1;
+	plugin::extension<Atomic, int32>(*atomic, matFXGlobals.atomicOffset) = 1;
 	atomic->pipeline = matFXGlobals.pipelines[rw::platform];
 }
 
@@ -579,13 +579,13 @@ MatFX::enableEffects(Atomic *atomic)
 void
 MatFX::disableEffects(Atomic *atomic)
 {
-	*PLUGINOFFSET(int32, atomic, matFXGlobals.atomicOffset) = 0;
+	plugin::extension<Atomic, int32>(*atomic, matFXGlobals.atomicOffset) = 0;
 }
 
 bool32
 MatFX::getEffects(Atomic *atomic)
 {
-	return *PLUGINOFFSET(int32, atomic, matFXGlobals.atomicOffset);
+	return plugin::extension<Atomic, int32>(*atomic, matFXGlobals.atomicOffset);
 }
 
 static void*
@@ -629,31 +629,30 @@ registerMatFXPlugin(void)
 		auto result = reg.registerExtension<int32>(fromRaw(ID_MATFX),
 		    PluginLifecycle{
 		        .construct = [](void* o, std::ptrdiff_t off) {
-		            createAtomicMatFX(o, static_cast<int32>(off), 0);
+		            createAtomicMatFX(o, off, 0);
 		        },
 		        .copy = [](void* d, const void* s, std::ptrdiff_t off) {
-		            copyAtomicMatFX(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+		            copyAtomicMatFX(d, const_cast<void*>(s), off, 0);
 		        },
 		    },
 		    PluginStream{
 		        .read = [](rw::Stream& stream, std::int32_t len, void* o, std::ptrdiff_t off)
 		            -> std::expected<void, StreamPluginError> {
-		            readAtomicMatFX(&stream, static_cast<int32>(len), o, static_cast<int32>(off), 0);
+		            readAtomicMatFX(&stream, static_cast<int32>(len), o, off, 0);
 		            return {};
 		        },
 		        .write = [](rw::Stream& stream, std::int32_t len, const void* o, std::ptrdiff_t off)
 		            -> std::expected<void, StreamPluginError> {
-		            writeAtomicMatFX(&stream, static_cast<int32>(len),
-		                             const_cast<void*>(o), static_cast<int32>(off), 0);
+		            writeAtomicMatFX(&stream, static_cast<int32>(len), const_cast<void*>(o), off, 0);
 		            return {};
 		        },
 		        .getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
-		            return getSizeAtomicMatFX(const_cast<void*>(o), static_cast<int32>(off), 0);
+		            return getSizeAtomicMatFX(const_cast<void*>(o), off, 0);
 		        },
 		    },
 		    "matfx-atomic");
 		if(result)
-			matFXGlobals.atomicOffset = static_cast<int32>(result->value());
+			matFXGlobals.atomicOffset = *result;
 	}
 
 	{
@@ -662,34 +661,33 @@ registerMatFXPlugin(void)
 		auto result = reg.registerExtension<MatFX*>(fromRaw(ID_MATFX),
 		    PluginLifecycle{
 		        .construct = [](void* o, std::ptrdiff_t off) {
-		            createMaterialMatFX(o, static_cast<int32>(off), 0);
+		            createMaterialMatFX(o, off, 0);
 		        },
 		        .destruct = [](void* o, std::ptrdiff_t off) {
-		            destroyMaterialMatFX(o, static_cast<int32>(off), 0);
+		            destroyMaterialMatFX(o, off, 0);
 		        },
 		        .copy = [](void* d, const void* s, std::ptrdiff_t off) {
-		            copyMaterialMatFX(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+		            copyMaterialMatFX(d, const_cast<void*>(s), off, 0);
 		        },
 		    },
 		    PluginStream{
 		        .read = [](rw::Stream& stream, std::int32_t len, void* o, std::ptrdiff_t off)
 		            -> std::expected<void, StreamPluginError> {
-		            readMaterialMatFX(&stream, static_cast<int32>(len), o, static_cast<int32>(off), 0);
+		            readMaterialMatFX(&stream, static_cast<int32>(len), o, off, 0);
 		            return {};
 		        },
 		        .write = [](rw::Stream& stream, std::int32_t len, const void* o, std::ptrdiff_t off)
 		            -> std::expected<void, StreamPluginError> {
-		            writeMaterialMatFX(&stream, static_cast<int32>(len),
-		                               const_cast<void*>(o), static_cast<int32>(off), 0);
+		            writeMaterialMatFX(&stream, static_cast<int32>(len), const_cast<void*>(o), off, 0);
 		            return {};
 		        },
 		        .getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
-		            return getSizeMaterialMatFX(const_cast<void*>(o), static_cast<int32>(off), 0);
+		            return getSizeMaterialMatFX(const_cast<void*>(o), off, 0);
 		        },
 		    },
 		    "matfx-material");
 		if(result)
-			matFXGlobals.materialOffset = static_cast<int32>(result->value());
+			matFXGlobals.materialOffset = *result;
 	}
 }
 

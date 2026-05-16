@@ -28,7 +28,7 @@ driverOpen(void *o, int32, int32)
 {
 	engine->driver[PLATFORM_XBOX]->defaultPipeline = makeDefaultPipeline();
 
-	engine->driver[PLATFORM_XBOX]->rasterNativeOffset = nativeRasterOffset;
+	engine->driver[PLATFORM_XBOX]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
 	engine->driver[PLATFORM_XBOX]->rasterCreate = rasterCreate;
 	engine->driver[PLATFORM_XBOX]->rasterLock = rasterLock;
 	engine->driver[PLATFORM_XBOX]->rasterUnlock = rasterUnlock;
@@ -424,7 +424,7 @@ makeDefaultPipeline(void)
 
 // Native Texture and Raster
 
-int32 nativeRasterOffset;
+plugin::PluginOffset<Raster, XboxRaster> nativeRasterOffset;
 
 static uint32
 calculateTextureSize(uint32 width, uint32 height, uint32 depth, uint32 format)
@@ -852,9 +852,9 @@ getLevelSize(Raster *raster, int32 level)
 }
 
 static void*
-createNativeRaster(void *object, int32 offset, int32)
+createNativeRaster(void *object, std::ptrdiff_t offset, int32)
 {
-	XboxRaster *raster = PLUGINOFFSET(XboxRaster, object, offset);
+	XboxRaster *raster = (XboxRaster*)((uint8*)object + offset);
 	raster->texture = nil;
 	raster->palette = nil;
 	raster->format = 0;
@@ -865,16 +865,16 @@ createNativeRaster(void *object, int32 offset, int32)
 }
 
 static void*
-destroyNativeRaster(void *object, int32, int32)
+destroyNativeRaster(void *object, std::ptrdiff_t, int32)
 {
 	// TODO:
 	return object;
 }
 
 static void*
-copyNativeRaster(void *dst, void *, int32 offset, int32)
+copyNativeRaster(void *dst, void *, std::ptrdiff_t offset, int32)
 {
-	XboxRaster *raster = PLUGINOFFSET(XboxRaster, dst, offset);
+	XboxRaster *raster = (XboxRaster*)((uint8*)dst + offset);
 	raster->texture = nil;
 	raster->palette = nil;
 	raster->format = 0;
@@ -891,19 +891,19 @@ registerNativeRaster(void)
 	auto result = reg.registerExtension<XboxRaster>(fromRaw(ID_RASTERXBOX),
 		PluginLifecycle{
 			.construct = [](void* o, std::ptrdiff_t off) {
-				createNativeRaster(o, static_cast<int32>(off), 0);
+				createNativeRaster(o, off, 0);
 			},
 			.destruct = [](void* o, std::ptrdiff_t off) {
-				destroyNativeRaster(o, static_cast<int32>(off), 0);
+				destroyNativeRaster(o, off, 0);
 			},
 			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-				copyNativeRaster(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+				copyNativeRaster(d, const_cast<void*>(s), off, 0);
 			},
 		},
 		PluginStream{},
 		"nativeraster-xbox");
 	if(result)
-		nativeRasterOffset = static_cast<int32>(result->value());
+		nativeRasterOffset = *result;
 }
 
 Texture*

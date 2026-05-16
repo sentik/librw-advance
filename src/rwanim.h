@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include "rw/plugin/offset.h"
 
 namespace rw {
 
@@ -188,7 +189,7 @@ struct UVAnim
 	static void applyUpdate(Material *mat);
 };
 
-extern int32 uvAnimOffset;
+extern plugin::PluginOffset<Material, UVAnim> uvAnimOffset;
 
 void registerUVAnimPlugin(void);
 

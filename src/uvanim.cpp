@@ -292,22 +292,22 @@ registerUVAnimInterpolator(void)
 	AnimInterpolatorInfo::registerInterp(info);
 }
 
-int32 uvAnimOffset;
+plugin::PluginOffset<Material, UVAnim> uvAnimOffset;
 
 static void*
-createUVAnim(void *object, int32 offset, int32)
+createUVAnim(void *object, std::ptrdiff_t offset, int32)
 {
 	UVAnim *uvanim;
-	uvanim = PLUGINOFFSET(UVAnim, object, offset);
+	uvanim = (UVAnim*)((uint8*)object + offset);
 	memset(uvanim, 0, sizeof(*uvanim));
 	return object;
 }
 
 static void*
-destroyUVAnim(void *object, int32 offset, int32)
+destroyUVAnim(void *object, std::ptrdiff_t offset, int32)
 {
 	UVAnim *uvanim;
-	uvanim = PLUGINOFFSET(UVAnim, object, offset);
+	uvanim = (UVAnim*)((uint8*)object + offset);
 	for(int32 i = 0; i < 8; i++){
 		AnimInterpolator *ip = uvanim->interp[i];
 		if(ip){
@@ -321,11 +321,11 @@ destroyUVAnim(void *object, int32 offset, int32)
 }
 
 static void*
-copyUVAnim(void *dst, void *src, int32 offset, int32)
+copyUVAnim(void *dst, void *src, std::ptrdiff_t offset, int32)
 {
 	UVAnim *srcuvanim, *dstuvanim;
-	dstuvanim = PLUGINOFFSET(UVAnim, dst, offset);
-	srcuvanim = PLUGINOFFSET(UVAnim, src, offset);
+	dstuvanim = (UVAnim*)((uint8*)dst + offset);
+	srcuvanim = (UVAnim*)((uint8*)src + offset);
 	for(int32 i = 0; i < 8; i++){
 		AnimInterpolator *srcip = srcuvanim->interp[i];
 		AnimInterpolator *dstip;
@@ -360,9 +360,9 @@ makeDummyAnimation(const char *name)
 }
 
 static Stream*
-readUVAnim(Stream *stream, int32, void *object, int32 offset, int32)
+readUVAnim(Stream *stream, int32, void *object, std::ptrdiff_t offset, int32)
 {
-	UVAnim *uvanim = PLUGINOFFSET(UVAnim, object, offset);
+	UVAnim *uvanim = (UVAnim*)((uint8*)object + offset);
 	if(!findChunk(stream, ID_STRUCT, nil, nil)){
 		RWERROR((ERR_CHUNK, "STRUCT"));
 		return nil;
@@ -400,9 +400,9 @@ readUVAnim(Stream *stream, int32, void *object, int32 offset, int32)
 }
 
 static Stream*
-writeUVAnim(Stream *stream, int32 size, void *object, int32 offset, int32)
+writeUVAnim(Stream *stream, int32 size, void *object, std::ptrdiff_t offset, int32)
 {
-	UVAnim *uvanim = PLUGINOFFSET(UVAnim, object, offset);
+	UVAnim *uvanim = (UVAnim*)((uint8*)object + offset);
 	writeChunkHeader(stream, ID_STRUCT, size-12);
 	uint32 mask = 0;
 	uint32 bit = 1;
@@ -423,9 +423,9 @@ writeUVAnim(Stream *stream, int32 size, void *object, int32 offset, int32)
 }
 
 static int32
-getSizeUVAnim(void *object, int32 offset, int32)
+getSizeUVAnim(void *object, std::ptrdiff_t offset, int32)
 {
-	UVAnim *uvanim = PLUGINOFFSET(UVAnim, object, offset);
+	UVAnim *uvanim = (UVAnim*)((uint8*)object + offset);
 	int32 size = 0;
 	for(int32 i = 0; i < 8; i++)
 		if(uvanim->interp[i])
@@ -451,43 +451,43 @@ registerUVAnimPlugin(void)
 		auto result = reg.registerExtension<UVAnim>(fromRaw(ID_UVANIMATION),
 		    PluginLifecycle{
 		        .construct = [](void* o, std::ptrdiff_t off) {
-		            createUVAnim(o, static_cast<int32>(off), 0);
+		            createUVAnim(o, off, 0);
 		        },
 		        .destruct = [](void* o, std::ptrdiff_t off) {
-		            destroyUVAnim(o, static_cast<int32>(off), 0);
+		            destroyUVAnim(o, off, 0);
 		        },
 		        .copy = [](void* d, const void* s, std::ptrdiff_t off) {
-		            copyUVAnim(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+		            copyUVAnim(d, const_cast<void*>(s), off, 0);
 		        },
 		    },
 		    PluginStream{
 		        .read = [](rw::Stream& stream, std::int32_t len, void* o, std::ptrdiff_t off)
 		            -> std::expected<void, StreamPluginError> {
-		            if(readUVAnim(&stream, static_cast<int32>(len), o, static_cast<int32>(off), 0))
+		            if(readUVAnim(&stream, static_cast<int32>(len), o, off, 0))
 		                return {};
 		            return std::unexpected(StreamPluginError::callbackFailed);
 		        },
 		        .write = [](rw::Stream& stream, std::int32_t len, const void* o, std::ptrdiff_t off)
 		            -> std::expected<void, StreamPluginError> {
 		            writeUVAnim(&stream, static_cast<int32>(len),
-		                        const_cast<void*>(o), static_cast<int32>(off), 0);
+		                        const_cast<void*>(o), off, 0);
 		            return {};
 		        },
 		        .getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
-		            return getSizeUVAnim(const_cast<void*>(o), static_cast<int32>(off), 0);
+		            return getSizeUVAnim(const_cast<void*>(o), off, 0);
 		        },
 		    },
 		    "uvanim-material");
 		if(result)
-			uvAnimOffset = static_cast<int32>(result->value());
+			uvAnimOffset = *result;
 	}
 }
 
-bool32 
+bool32
 UVAnim::exists(Material *mat)
 {
 	int32 i;
-	UVAnim *uvanim = PLUGINOFFSET(UVAnim, mat, uvAnimOffset);
+	UVAnim *uvanim = plugin::extensionPtr(mat, uvAnimOffset);
 	for(i = 0; i < 8; i++)
 		if(uvanim->interp[i])
 			return 1;
@@ -498,7 +498,7 @@ void
 UVAnim::addTime(Material *mat, float32 t)
 {
 	int32 i;
-	UVAnim *uvanim = PLUGINOFFSET(UVAnim, mat, uvAnimOffset);
+	UVAnim *uvanim = plugin::extensionPtr(mat, uvAnimOffset);
 	for(i = 0; i < 8; i++)
 		if(uvanim->interp[i])
 			uvanim->interp[i]->addTime(t);
@@ -510,7 +510,7 @@ UVAnim::applyUpdate(Material *mat)
 	int32 i, j;
 	int32 uv;
 	Matrix m;
-	UVAnim *uvanim = PLUGINOFFSET(UVAnim, mat, uvAnimOffset);
+	UVAnim *uvanim = plugin::extensionPtr(mat, uvAnimOffset);
 	for(i = 0; i < 2; i++)
 		if(uvanim->uv[i])
 			uvanim->uv[i]->setIdentity();

@@ -120,6 +120,8 @@ add_library(librw
 add_library(librw::librw ALIAS librw)
 
 target_include_directories(librw
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:${LIBRW_INSTALL_INCLUDEDIR}>

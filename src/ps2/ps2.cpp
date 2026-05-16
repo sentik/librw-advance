@@ -32,7 +32,7 @@ driverOpen(void *o, int32, int32)
 {
 	engine->driver[PLATFORM_PS2]->defaultPipeline = makeDefaultPipeline();
 
-	engine->driver[PLATFORM_PS2]->rasterNativeOffset = nativeRasterOffset;
+	engine->driver[PLATFORM_PS2]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
 	engine->driver[PLATFORM_PS2]->rasterCreate = rasterCreate;
 	engine->driver[PLATFORM_PS2]->rasterLock = rasterLock;
 	engine->driver[PLATFORM_PS2]->rasterUnlock = rasterUnlock;
@@ -1162,14 +1162,14 @@ makeDefaultPipeline(void)
 
 // ADC
 
-int32 adcOffset;
+plugin::PluginOffset<Geometry, ADCData> adcOffset;
 
 int8*
 getADCbits(Geometry *geo)
 {
 	int8 *bits = nil;
 	if(adcOffset){
-		ADCData *adc = PLUGINOFFSET(ADCData, geo, adcOffset);
+		ADCData *adc = plugin::extensionPtr(geo, adcOffset);
 		if(adc->adcFormatted)
 			bits = adc->adcBits;
 	}
@@ -1198,7 +1198,7 @@ convertADC(Geometry*)
 void
 unconvertADC(Geometry *g)
 {
-	ADCData *adc = PLUGINOFFSET(ADCData, g, adcOffset);
+	ADCData *adc = plugin::extensionPtr(g, adcOffset);
 	if(!adc->adcFormatted)
 		return;
 	int8 *b = adc->adcBits;
@@ -1247,7 +1247,7 @@ unconvertADC(Geometry *g)
 void
 allocateADC(Geometry *geo)
 {
-	ADCData *adc = PLUGINOFFSET(ADCData, geo, adcOffset);
+	ADCData *adc = plugin::extensionPtr(geo, adcOffset);
 	adc->adcFormatted = 1;
 	adc->numBits = geo->meshHeader->totalIndices;
 	int32 size = adc->numBits+3 & ~3;
@@ -1256,18 +1256,18 @@ allocateADC(Geometry *geo)
 }
 
 static void*
-createADC(void *object, int32 offset, int32)
+createADC(void *object, std::ptrdiff_t offset, int32)
 {
-	ADCData *adc = PLUGINOFFSET(ADCData, object, offset);
+	ADCData *adc = (ADCData*)((uint8*)object + offset);
 	adc->adcFormatted = 0;
 	return object;
 }
 
 static void*
-copyADC(void *dst, void *src, int32 offset, int32)
+copyADC(void *dst, void *src, std::ptrdiff_t offset, int32)
 {
-	ADCData *dstadc = PLUGINOFFSET(ADCData, dst, offset);
-	ADCData *srcadc = PLUGINOFFSET(ADCData, src, offset);
+	ADCData *dstadc = (ADCData*)((uint8*)dst + offset);
+	ADCData *srcadc = (ADCData*)((uint8*)src + offset);
 	dstadc->adcFormatted = srcadc->adcFormatted;
 	if(!dstadc->adcFormatted)
 		return dst;
@@ -1279,18 +1279,18 @@ copyADC(void *dst, void *src, int32 offset, int32)
 }
 
 static void*
-destroyADC(void *object, int32 offset, int32)
+destroyADC(void *object, std::ptrdiff_t offset, int32)
 {
-	ADCData *adc = PLUGINOFFSET(ADCData, object, offset);
+	ADCData *adc = (ADCData*)((uint8*)object + offset);
 	if(adc->adcFormatted)
 		rwFree(adc->adcBits);
 	return object;
 }
 
 static Stream*
-readADC(Stream *stream, int32, void *object, int32 offset, int32)
+readADC(Stream *stream, int32, void *object, std::ptrdiff_t offset, int32)
 {
-	ADCData *adc = PLUGINOFFSET(ADCData, object, offset);
+	ADCData *adc = (ADCData*)((uint8*)object + offset);
 	if(!findChunk(stream, ID_ADC, nil, nil)){
 		RWERROR((ERR_CHUNK, "ADC"));
 		return nil;
@@ -1309,9 +1309,9 @@ readADC(Stream *stream, int32, void *object, int32 offset, int32)
 }
 
 static Stream*
-writeADC(Stream *stream, int32 len, void *object, int32 offset, int32)
+writeADC(Stream *stream, int32 len, void *object, std::ptrdiff_t offset, int32)
 {
-	ADCData *adc = PLUGINOFFSET(ADCData, object, offset);
+	ADCData *adc = (ADCData*)((uint8*)object + offset);
 	Geometry *geometry = (Geometry*)object;
 	writeChunkHeader(stream, ID_ADC, len-12);
 	if(geometry->flags & Geometry::NATIVE){
@@ -1325,10 +1325,10 @@ writeADC(Stream *stream, int32 len, void *object, int32 offset, int32)
 }
 
 static int32
-getSizeADC(void *object, int32 offset, int32)
+getSizeADC(void *object, std::ptrdiff_t offset, int32)
 {
 	Geometry *geometry = (Geometry*)object;
-	ADCData *adc = PLUGINOFFSET(ADCData, object, offset);
+	ADCData *adc = (ADCData*)((uint8*)object + offset);
 	if(!adc->adcFormatted)
 		return 0;
 	if(geometry->flags & Geometry::NATIVE)
@@ -1344,33 +1344,33 @@ registerADCPlugin(void)
 	auto result = reg.registerExtension<ADCData>(fromRaw(ID_ADC),
 		PluginLifecycle{
 			.construct = [](void* o, std::ptrdiff_t off) {
-				createADC(o, static_cast<int32>(off), 0);
+				createADC(o, off, 0);
 			},
 			.destruct = [](void* o, std::ptrdiff_t off) {
-				destroyADC(o, static_cast<int32>(off), 0);
+				destroyADC(o, off, 0);
 			},
 			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-				copyADC(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+				copyADC(d, const_cast<void*>(s), off, 0);
 			},
 		},
 		PluginStream{
 			.read = [](rw::Stream& stream, std::int32_t len, void* o, std::ptrdiff_t off)
 				-> std::expected<void, StreamPluginError> {
-				if(readADC(&stream, len, o, static_cast<int32>(off), 0)) return {};
+				if(readADC(&stream, len, o, off, 0)) return {};
 				return std::unexpected(StreamPluginError::callbackFailed);
 			},
 			.write = [](rw::Stream& stream, std::int32_t len, const void* o, std::ptrdiff_t off)
 				-> std::expected<void, StreamPluginError> {
-				writeADC(&stream, len, const_cast<void*>(o), static_cast<int32>(off), 0);
+				writeADC(&stream, len, const_cast<void*>(o), off, 0);
 				return {};
 			},
 			.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
-				return getSizeADC(const_cast<void*>(o), static_cast<int32>(off), 0);
+				return getSizeADC(const_cast<void*>(o), off, 0);
 			},
 		},
 		"adc");
 	if(result)
-		adcOffset = static_cast<int32>(result->value());
+		adcOffset = *result;
 }
 
 // misc stuff

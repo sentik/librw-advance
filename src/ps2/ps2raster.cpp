@@ -24,7 +24,7 @@
 namespace rw {
 namespace ps2 {
 
-int32 nativeRasterOffset;
+plugin::PluginOffset<Raster, Ps2Raster> nativeRasterOffset;
 
 #define MAXLEVEL(r) ((r)->tex1low >> 2)
 static bool32 noNewStyleRasters;
@@ -1825,9 +1825,9 @@ rasterNumLevels(Raster *raster)
 }
 
 static void*
-createNativeRaster(void *object, int32 offset, int32)
+createNativeRaster(void *object, std::ptrdiff_t offset, int32)
 {
-	Ps2Raster *raster = GETPS2RASTEREXT(object);
+	Ps2Raster *raster = (Ps2Raster*)((uint8*)object + offset);
 	raster->tex0 = 0;
 	raster->paletteBase = 0;
 	raster->kl = defaultMipMapKL;
@@ -1846,18 +1846,18 @@ createNativeRaster(void *object, int32 offset, int32)
 }
 
 static void*
-destroyNativeRaster(void *object, int32 offset, int32)
+destroyNativeRaster(void *object, std::ptrdiff_t offset, int32)
 {
-	Ps2Raster *raster = GETPS2RASTEREXT(object);
+	Ps2Raster *raster = (Ps2Raster*)((uint8*)object + offset);
 	freealign(raster->data);
 	return object;
 }
 
 static void*
-copyNativeRaster(void *dst, void *src, int32 offset, int32)
+copyNativeRaster(void *dst, void *src, std::ptrdiff_t offset, int32)
 {
-	Ps2Raster *dstraster = GETPS2RASTEREXT(dst);
-	Ps2Raster *srcraster = GETPS2RASTEREXT(src);
+	Ps2Raster *dstraster = (Ps2Raster*)((uint8*)dst + offset);
+	Ps2Raster *srcraster = (Ps2Raster*)((uint8*)src + offset);
 	*dstraster = *srcraster;
 	return dst;
 }
@@ -1902,19 +1902,19 @@ registerNativeRaster(void)
 		auto result = reg.registerExtension<Ps2Raster>(fromRaw(ID_RASTERPS2),
 			PluginLifecycle{
 				.construct = [](void* o, std::ptrdiff_t off) {
-					createNativeRaster(o, static_cast<int32>(off), 0);
+					createNativeRaster(o, off, 0);
 				},
 				.destruct = [](void* o, std::ptrdiff_t off) {
-					destroyNativeRaster(o, static_cast<int32>(off), 0);
+					destroyNativeRaster(o, off, 0);
 				},
 				.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-					copyNativeRaster(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+					copyNativeRaster(d, const_cast<void*>(s), off, 0);
 				},
 			},
 			PluginStream{},
 			"nativeraster-ps2");
 		if(result)
-			nativeRasterOffset = static_cast<int32>(result->value());
+			nativeRasterOffset = *result;
 	}
 
 	// skymipmap is stream-only for Texture (size=0) — use new stream-only path.

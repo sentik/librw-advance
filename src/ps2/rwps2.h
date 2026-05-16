@@ -1,3 +1,6 @@
+#include "rw/plugin/offset.h"
+#include "../rwraster.h"
+
 namespace rw {
 
 #ifdef RW_PS2
@@ -218,7 +221,7 @@ struct ADCData
 	int8 *adcBits;
 	int32 numBits;
 };
-extern int32 adcOffset;
+extern plugin::PluginOffset<Geometry, ADCData> adcOffset;
 void registerADCPlugin(void);
 
 int8 *getADCbits(Geometry *geo);
@@ -269,9 +272,9 @@ struct Ps2Raster
 	uint32 dataSize;
 };
 
-extern int32 nativeRasterOffset;
+extern plugin::PluginOffset<Raster, Ps2Raster> nativeRasterOffset;
 void registerNativeRaster(void);
-#define GETPS2RASTEREXT(raster) PLUGINOFFSET(rw::ps2::Ps2Raster, raster, rw::ps2::nativeRasterOffset)
+#define GETPS2RASTEREXT(raster) rw::plugin::extensionPtr(raster, rw::ps2::nativeRasterOffset)
 
 Texture *readNativeTexture(Stream *stream);
 void writeNativeTexture(Texture *tex, Stream *stream);

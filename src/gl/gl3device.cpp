@@ -524,7 +524,7 @@ setFilterMode(uint32 stage, int32 filter, int32 maxAniso = 1)
 		rwStateCache.texstage[stage].filter = (Texture::FilterMode)filter;
 		Raster *raster = rwStateCache.texstage[stage].raster;
 		if(raster){
-			Gl3Raster *natras = PLUGINOFFSET(Gl3Raster, rwStateCache.texstage[stage].raster, nativeRasterOffset);
+			Gl3Raster *natras = plugin::extensionPtr(rwStateCache.texstage[stage].raster, nativeRasterOffset);
 			if(natras->filterMode != filter){
 				setActiveTexture(stage);
 				if(natras->autogenMipmap || natras->numLevels > 1){
@@ -552,7 +552,7 @@ setAddressU(uint32 stage, int32 addressing)
 		rwStateCache.texstage[stage].addressingU = (Texture::Addressing)addressing;
 		Raster *raster = rwStateCache.texstage[stage].raster;
 		if(raster){
-			Gl3Raster *natras = PLUGINOFFSET(Gl3Raster, raster, nativeRasterOffset);
+			Gl3Raster *natras = plugin::extensionPtr(raster, nativeRasterOffset);
 			if(natras->addressU == addressing){
 				setActiveTexture(stage);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, addressConvMap[addressing]);
@@ -569,7 +569,7 @@ setAddressV(uint32 stage, int32 addressing)
 		rwStateCache.texstage[stage].addressingV = (Texture::Addressing)addressing;
 		Raster *raster = rwStateCache.texstage[stage].raster;
 		if(raster){
-			Gl3Raster *natras = PLUGINOFFSET(Gl3Raster, rwStateCache.texstage[stage].raster, nativeRasterOffset);
+			Gl3Raster *natras = plugin::extensionPtr(rwStateCache.texstage[stage].raster, nativeRasterOffset);
 			if(natras->addressV == addressing){
 				setActiveTexture(stage);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, addressConvMap[addressing]);
@@ -588,7 +588,7 @@ setRasterStageOnly(uint32 stage, Raster *raster)
 		setActiveTexture(stage);
 		if(raster){
 			assert(raster->platform == PLATFORM_GL3);
-			Gl3Raster *natras = PLUGINOFFSET(Gl3Raster, raster, nativeRasterOffset);
+			Gl3Raster *natras = plugin::extensionPtr(raster, nativeRasterOffset);
 			bindTexture(natras->texid);
 
 			rwStateCache.texstage[stage].filter = (rw::Texture::FilterMode)natras->filterMode;
@@ -622,7 +622,7 @@ setRasterStage(uint32 stage, Raster *raster)
 		setActiveTexture(stage);
 		if(raster){
 			assert(raster->platform == PLATFORM_GL3);
-			Gl3Raster *natras = PLUGINOFFSET(Gl3Raster, raster, nativeRasterOffset);
+			Gl3Raster *natras = plugin::extensionPtr(raster, nativeRasterOffset);
 			bindTexture(natras->texid);
 			uint32 filter = rwStateCache.texstage[stage].filter;
 			uint32 addrU = rwStateCache.texstage[stage].addressingU;
@@ -1203,8 +1203,8 @@ setFrameBuffer(Camera *cam)
 	Raster *zbuf = cam->zBuffer->parent;
 	assert(fbuf);
 
-	Gl3Raster *natfb = PLUGINOFFSET(Gl3Raster, fbuf, nativeRasterOffset);
-	Gl3Raster *natzb = PLUGINOFFSET(Gl3Raster, zbuf, nativeRasterOffset);
+	Gl3Raster *natfb = plugin::extensionPtr(fbuf, nativeRasterOffset);
+	Gl3Raster *natzb = plugin::extensionPtr(zbuf, nativeRasterOffset);
 	assert(fbuf->type == Raster::CAMERA || fbuf->type == Raster::CAMERATEXTURE);
 
 	// Have to make sure depth buffer is attached to FB's fbo
@@ -1216,7 +1216,7 @@ setFrameBuffer(Camera *cam)
 		}else{
 			if(natzb->fboMate){
 				// have to detatch from fbo first!
-				Gl3Raster *oldfb = PLUGINOFFSET(Gl3Raster, natzb->fboMate, nativeRasterOffset);
+				Gl3Raster *oldfb = plugin::extensionPtr(natzb->fboMate, nativeRasterOffset);
 				if(oldfb->fbo){
 					bindFramebuffer(oldfb->fbo);
 					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
@@ -1441,8 +1441,8 @@ rasterRenderFast(Raster *raster, int32 x, int32 y)
 {
 	Raster *src = raster;
 	Raster *dst = Raster::getCurrentContext();
-	Gl3Raster *natdst = PLUGINOFFSET(Gl3Raster, dst, nativeRasterOffset);
-	Gl3Raster *natsrc = PLUGINOFFSET(Gl3Raster, src, nativeRasterOffset);
+	Gl3Raster *natdst = plugin::extensionPtr(dst, nativeRasterOffset);
+	Gl3Raster *natsrc = plugin::extensionPtr(src, nativeRasterOffset);
 
 	switch(dst->type){
 	case Raster::NORMAL:

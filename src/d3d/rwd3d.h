@@ -3,6 +3,8 @@
 #include <d3d9.h>
 #endif
 #endif
+#include "rw/plugin/offset.h"
+#include "../rwraster.h"
 
 namespace rw {
 
@@ -289,9 +291,9 @@ void allocateDXT(Raster *raster, int32 dxt, int32 numLevels, bool32 hasAlpha);
 void setPalette(Raster *raster, void *palette, int32 size);
 void setTexels(Raster *raster, void *texels, int32 level);
 
-extern int32 nativeRasterOffset;
+extern plugin::PluginOffset<Raster, D3dRaster> nativeRasterOffset;
 void registerNativeRaster(void);
-#define GETD3DRASTEREXT(raster) PLUGINOFFSET(rw::d3d::D3dRaster, raster, rw::d3d::nativeRasterOffset)
+#define GETD3DRASTEREXT(raster) rw::plugin::extensionPtr(raster, rw::d3d::nativeRasterOffset)
 
 // Rendering
 

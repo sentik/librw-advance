@@ -28,7 +28,7 @@
 
 namespace rw {
 
-int32 hAnimOffset;
+plugin::PluginOffset<Frame, HAnimData> hAnimOffset;
 bool32 hAnimDoStream = 1;
 
 HAnimHierarchy*
@@ -201,23 +201,23 @@ HAnimHierarchy::updateMatrices(void)
 HAnimData*
 HAnimData::get(Frame *f)
 {
-	return PLUGINOFFSET(HAnimData, f, hAnimOffset);
+	return plugin::extensionPtr(f, hAnimOffset);
 }
 
 static void*
-createHAnim(void *object, int32 offset, int32)
+createHAnim(void *object, std::ptrdiff_t offset, int32)
 {
-	HAnimData *hanim = PLUGINOFFSET(HAnimData, object, offset);
+	HAnimData *hanim = (HAnimData*)((uint8*)object + offset);
 	hanim->id = -1;
 	hanim->hierarchy = nil;
 	return object;
 }
 
 static void*
-destroyHAnim(void *object, int32 offset, int32)
+destroyHAnim(void *object, std::ptrdiff_t offset, int32)
 {
 	int i;
-	HAnimData *hanim = PLUGINOFFSET(HAnimData, object, offset);
+	HAnimData *hanim = (HAnimData*)((uint8*)object + offset);
 	if(hanim->hierarchy){
 		for(i = 0; i < hanim->hierarchy->numNodes; i++)
 			hanim->hierarchy->nodeInfo[i].frame = nil;
@@ -230,11 +230,11 @@ destroyHAnim(void *object, int32 offset, int32)
 }
 
 static void*
-copyHAnim(void *dst, void *src, int32 offset, int32)
+copyHAnim(void *dst, void *src, std::ptrdiff_t offset, int32)
 {
 	int i;
-	HAnimData *dsthanim = PLUGINOFFSET(HAnimData, dst, offset);
-	HAnimData *srchanim = PLUGINOFFSET(HAnimData, src, offset);
+	HAnimData *dsthanim = (HAnimData*)((uint8*)dst + offset);
+	HAnimData *srchanim = (HAnimData*)((uint8*)src + offset);
 	HAnimHierarchy *srchier, *dsthier;
 	dsthanim->id = srchanim->id;
 	dsthanim->hierarchy = nil;
@@ -254,10 +254,10 @@ copyHAnim(void *dst, void *src, int32 offset, int32)
 }
 
 static Stream*
-readHAnim(Stream *stream, int32, void *object, int32 offset, int32)
+readHAnim(Stream *stream, int32, void *object, std::ptrdiff_t offset, int32)
 {
 	int32 ver, numNodes;
-	HAnimData *hanim = PLUGINOFFSET(HAnimData, object, offset);
+	HAnimData *hanim = (HAnimData*)((uint8*)object + offset);
 	ver = stream->readI32();
 	assert(ver == 0x100);
 	hanim->id = stream->readI32();
@@ -286,9 +286,9 @@ readHAnim(Stream *stream, int32, void *object, int32 offset, int32)
 }
 
 static Stream*
-writeHAnim(Stream *stream, int32, void *object, int32 offset, int32)
+writeHAnim(Stream *stream, int32, void *object, std::ptrdiff_t offset, int32)
 {
-	HAnimData *hanim = PLUGINOFFSET(HAnimData, object, offset);
+	HAnimData *hanim = (HAnimData*)((uint8*)object + offset);
 	stream->writeI32(256);
 	stream->writeI32(hanim->id);
 	if(hanim->hierarchy == nil){
@@ -308,9 +308,9 @@ writeHAnim(Stream *stream, int32, void *object, int32 offset, int32)
 }
 
 static int32
-getSizeHAnim(void *object, int32 offset, int32)
+getSizeHAnim(void *object, std::ptrdiff_t offset, int32)
 {
-	HAnimData *hanim = PLUGINOFFSET(HAnimData, object, offset);
+	HAnimData *hanim = (HAnimData*)((uint8*)object + offset);
 	if(!hAnimDoStream ||
 	   (version >= 0x35000 && hanim->id == -1 && hanim->hierarchy == nil))
 		return 0;
@@ -413,40 +413,38 @@ registerHAnimPlugin(void)
 
 	PluginLifecycle lc{
 		.construct = [](void* o, std::ptrdiff_t off) {
-			createHAnim(o, static_cast<int32>(off), 0);
+			createHAnim(o, off, 0);
 		},
 		.destruct = [](void* o, std::ptrdiff_t off) {
-			destroyHAnim(o, static_cast<int32>(off), 0);
+			destroyHAnim(o, off, 0);
 		},
 		.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-			copyHAnim(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+			copyHAnim(d, const_cast<void*>(s), off, 0);
 		},
 	};
 
 	PluginStream st{
 		.read = [](Stream& s, std::int32_t len, void* o, std::ptrdiff_t off)
 		        -> std::expected<void, StreamPluginError> {
-			auto* r = readHAnim(&s, len, o, static_cast<int32>(off), 0);
+			auto* r = readHAnim(&s, len, o, off, 0);
 			return r ? std::expected<void, StreamPluginError>{} :
 			           std::unexpected(StreamPluginError::ioFailure);
 		},
 		.write = [](Stream& s, std::int32_t len, const void* o, std::ptrdiff_t off)
 		         -> std::expected<void, StreamPluginError> {
-			auto* r = writeHAnim(&s, len,
-			    const_cast<void*>(o), static_cast<int32>(off), 0);
+			auto* r = writeHAnim(&s, len, const_cast<void*>(o), off, 0);
 			return r ? std::expected<void, StreamPluginError>{} :
 			           std::unexpected(StreamPluginError::ioFailure);
 		},
 		.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
-			return getSizeHAnim(const_cast<void*>(o),
-			    static_cast<int32>(off), 0);
+			return getSizeHAnim(const_cast<void*>(o), off, 0);
 		},
 	};
 
 	auto result = reg.registerExtension<HAnimData>(
 	    fromRaw(ID_HANIM), std::move(lc), std::move(st), "hanim");
 	if(result)
-		hAnimOffset = static_cast<int32>(result->value());
+		hAnimOffset = *result;
 }
 
 }

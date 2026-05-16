@@ -1,3 +1,5 @@
+#include "rw/plugin/offset.h"
+
 namespace rw {
 
 /*
@@ -75,7 +77,7 @@ struct HAnimData
 	static HAnimData *get(Frame *f);
 };
 
-extern int32 hAnimOffset;
+extern plugin::PluginOffset<Frame, HAnimData> hAnimOffset;
 extern bool32 hAnimDoStream;
 void registerHAnimPlugin(void);
 
@@ -168,8 +170,8 @@ struct MatFX
 
 struct MatFXGlobals
 {
-	int32 atomicOffset;
-	int32 materialOffset;
+	plugin::PluginOffset<Atomic, int32> atomicOffset;
+	plugin::PluginOffset<Material, MatFX*> materialOffset;
 	ObjPipeline *pipelines[NUM_PLATFORMS];
 	ObjPipeline *dummypipe;
 };
@@ -181,10 +183,12 @@ void registerMatFXPlugin(void);
  * Skin
  */
 
+struct Skin;
+
 struct SkinGlobals
 {
-	int32 geoOffset;
-	int32 atomicOffset;
+	plugin::PluginOffset<Geometry, Skin*> geoOffset;
+	plugin::PluginOffset<Atomic, HAnimHierarchy*> atomicOffset;
 	ObjPipeline *pipelines[NUM_PLATFORMS];
 	ObjPipeline *dummypipe;
 };
@@ -229,18 +233,16 @@ struct Skin
 
 	static void setPipeline(Atomic *a, int32 type);
 	static Skin *get(const Geometry *geo){
-		return *PLUGINOFFSET(Skin*, geo, skinGlobals.geoOffset);
+		return plugin::extension<Geometry, Skin*>(*geo, skinGlobals.geoOffset);
 	}
 	static void set(Geometry *geo, Skin *skin){
-		*PLUGINOFFSET(Skin*, geo, skinGlobals.geoOffset) = skin;
+		plugin::extension<Geometry, Skin*>(*geo, skinGlobals.geoOffset) = skin;
 	}
 	static void setHierarchy(Atomic *atomic, HAnimHierarchy *hier){
-		*PLUGINOFFSET(HAnimHierarchy*, atomic,
-		              skinGlobals.atomicOffset) = hier;
+		plugin::extension<Atomic, HAnimHierarchy*>(*atomic, skinGlobals.atomicOffset) = hier;
 	}
 	static HAnimHierarchy *getHierarchy(const Atomic *atomic){
-		return *PLUGINOFFSET(HAnimHierarchy*, atomic,
-		                     skinGlobals.atomicOffset);
+		return plugin::extension<Atomic, HAnimHierarchy*>(*atomic, skinGlobals.atomicOffset);
 	}
 };
 

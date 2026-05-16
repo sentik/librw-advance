@@ -19,7 +19,7 @@
 namespace rw {
 namespace xbox {
 
-static int32 vertexFmtOffset;
+static plugin::PluginOffset<Geometry, uint32> vertexFmtOffset;
 
 uint32 vertexFormatSizes[6] = {
 	0, 1, 2, 2, 4, 4
@@ -28,7 +28,7 @@ uint32 vertexFormatSizes[6] = {
 uint32*
 getVertexFmt(Geometry *g)
 {
-	return PLUGINOFFSET(uint32, g, vertexFmtOffset);
+	return plugin::extensionPtr(g, vertexFmtOffset);
 }
 
 uint32
@@ -66,37 +66,37 @@ getVertexFmtStride(uint32 fmt)
 }
 
 static void*
-createVertexFmt(void *object, int32 offset, int32)
+createVertexFmt(void *object, std::ptrdiff_t offset, int32)
 {
-	*PLUGINOFFSET(uint32, object, offset) = 0;
+	*(uint32*)((uint8*)object + offset) = 0;
 	return object;
 }
 
 static void*
-copyVertexFmt(void *dst, void *src, int32 offset, int32)
+copyVertexFmt(void *dst, void *src, std::ptrdiff_t offset, int32)
 {
-	*PLUGINOFFSET(uint32, dst, offset) = *PLUGINOFFSET(uint32, src, offset);
+	*(uint32*)((uint8*)dst + offset) = *(uint32*)((uint8*)src + offset);
 	return dst;
 }
 
 static Stream*
-readVertexFmt(Stream *stream, int32, void *object, int32 offset, int32)
+readVertexFmt(Stream *stream, int32, void *object, std::ptrdiff_t offset, int32)
 {
 	uint32 fmt = stream->readU32();
-	*PLUGINOFFSET(uint32, object, offset) = fmt;
+	*(uint32*)((uint8*)object + offset) = fmt;
 	// TODO: ? create and attach "vertex shader"
 	return stream;
 }
 
 static Stream*
-writeVertexFmt(Stream *stream, int32, void *object, int32 offset, int32)
+writeVertexFmt(Stream *stream, int32, void *object, std::ptrdiff_t offset, int32)
 {
-	stream->writeI32(*PLUGINOFFSET(uint32, object, offset));
+	stream->writeI32(*(uint32*)((uint8*)object + offset));
 	return stream;
 }
 
 static int32
-getSizeVertexFmt(void*, int32, int32)
+getSizeVertexFmt(void*, std::ptrdiff_t, int32)
 {
 	if(rw::platform != PLATFORM_XBOX)
 		return -1;
@@ -111,30 +111,30 @@ registerVertexFormatPlugin(void)
 	auto result = reg.registerExtension<uint32>(fromRaw(ID_VERTEXFMT),
 		PluginLifecycle{
 			.construct = [](void* o, std::ptrdiff_t off) {
-				createVertexFmt(o, static_cast<int32>(off), 0);
+				createVertexFmt(o, off, 0);
 			},
 			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-				copyVertexFmt(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+				copyVertexFmt(d, const_cast<void*>(s), off, 0);
 			},
 		},
 		PluginStream{
 			.read = [](rw::Stream& stream, std::int32_t len, void* o, std::ptrdiff_t off)
 				-> std::expected<void, StreamPluginError> {
-				readVertexFmt(&stream, len, o, static_cast<int32>(off), 0);
+				readVertexFmt(&stream, len, o, off, 0);
 				return {};
 			},
 			.write = [](rw::Stream& stream, std::int32_t len, const void* o, std::ptrdiff_t off)
 				-> std::expected<void, StreamPluginError> {
-				writeVertexFmt(&stream, len, const_cast<void*>(o), static_cast<int32>(off), 0);
+				writeVertexFmt(&stream, len, const_cast<void*>(o), off, 0);
 				return {};
 			},
 			.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
-				return getSizeVertexFmt(const_cast<void*>(o), static_cast<int32>(off), 0);
+				return getSizeVertexFmt(const_cast<void*>(o), off, 0);
 			},
 		},
 		"vertexfmt");
 	if(result)
-		vertexFmtOffset = static_cast<int32>(result->value());
+		vertexFmtOffset = *result;
 }
 
 }

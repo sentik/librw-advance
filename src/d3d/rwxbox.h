@@ -1,3 +1,6 @@
+#include "rw/plugin/offset.h"
+#include "../rwraster.h"
+
 namespace rw {
 namespace xbox {
 
@@ -92,9 +95,9 @@ struct XboxRaster
 
 int32 getLevelSize(Raster *raster, int32 level);
 
-extern int32 nativeRasterOffset;
+extern plugin::PluginOffset<Raster, XboxRaster> nativeRasterOffset;
 void registerNativeRaster(void);
-#define GETXBOXRASTEREXT(raster) PLUGINOFFSET(rw::xbox::XboxRaster, raster, rw::xbox::nativeRasterOffset)
+#define GETXBOXRASTEREXT(raster) rw::plugin::extensionPtr(raster, rw::xbox::nativeRasterOffset)
 
 Texture *readNativeTexture(Stream *stream);
 void writeNativeTexture(Texture *tex, Stream *stream);
