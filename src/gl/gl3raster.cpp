@@ -7,7 +7,11 @@
 #include "../rwerror.h"
 #include "../rwplg.h"
 #include "../rwpipeline.h"
-#include "../rwobjects.h"
+#include "../rwtexture.h"
+#include "../rwscene.h"
+#include "../rwgeometry.h"
+#include "../rwraster.h"
+#include "../rwimage.h"
 #include "../rwengine.h"
 
 #include "rwgl3.h"
@@ -908,8 +912,8 @@ readNativeTexture(Stream *stream)
 
 	// Texture
 	tex->filterAddressing = stream->readU32();
-	stream->read8(tex->name, 32);
-	stream->read8(tex->mask, 32);
+	stream->read8(tex->name.data(), 32);
+	stream->read8(tex->mask.data(), 32);
 
 	// Raster
 	uint32 format = stream->readU32();
@@ -969,8 +973,8 @@ writeNativeTexture(Texture *tex, Stream *stream)
 
 	// Texture
 	stream->writeU32(tex->filterAddressing);
-	stream->write8(tex->name, 32);
-	stream->write8(tex->mask, 32);
+	stream->write8(tex->name.data(), 32);
+	stream->write8(tex->mask.data(), 32);
 
 	// Raster
 	int32 numLevels = natras->numLevels;

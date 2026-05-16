@@ -8,7 +8,11 @@
 #include "rwerror.h"
 #include "rwplg.h"
 #include "rwpipeline.h"
-#include "rwobjects.h"
+#include "rwscene.h"
+#include "rwgeometry.h"
+#include "rwtexture.h"
+#include "rwraster.h"
+#include "rwimage.h"
 #include "rwengine.h"
 #include "ps2/rwps2.h"
 #include "d3d/rwd3d.h"
@@ -73,7 +77,7 @@ textureClose(void *object, int32 offset, int32 size)
 
 	FORLIST(lnk, TEXTUREGLOBAL(textures)){
 		Texture *tex = LLLinkGetData(lnk, Texture, inGlobalList);
-//		printf("Tex still allocated: %d %s %s\n", tex->refCount, tex->name, tex->mask);
+//		printf("Tex still allocated: %d %s %s\n", tex->refCount, tex->name.data(), tex->mask.data());
 		assert(tex->dict == nil);
 		tex->destroy();
 	}
@@ -170,7 +174,7 @@ TexDictionary::find(const char *name)
 {
 	FORLIST(lnk, this->textures){
 		Texture *tex = Texture::fromDict(lnk);
-		if(strncmp_ci(tex->name, name, 32) == 0)
+		if(strncmp_ci(tex->name.data(), name, 32) == 0)
 			return tex;
 	}
 	return nil;
@@ -274,8 +278,8 @@ Texture::create(Raster *raster)
 	numAllocated++;
 	tex->dict = nil;
 	tex->inDict.init();
-	memset(tex->name, 0, 32);
-	memset(tex->mask, 0, 32);
+	memset(tex->name.data(), 0, 32);
+	memset(tex->mask.data(), 0, 32);
 	tex->filterAddressing = (WRAP << 12) | (WRAP << 8) | NEAREST;
 	tex->raster = raster;
 	tex->refCount = 1;
@@ -319,9 +323,9 @@ defaultReadCB(const char *name, const char *mask)
 	img = Image::readMasked(name, mask);
 	if(img){
 		tex = Texture::create(Raster::createFromImage(img));
-		strncpy(tex->name, name, 32);
+		strncpy(tex->name.data(), name, 32);
 		if(mask)
-			strncpy(tex->mask, mask, 32);
+			strncpy(tex->mask.data(), mask, 32);
 		img->destroy();
 		return tex;
 	}else
@@ -348,9 +352,9 @@ Texture::read(const char *name, const char *mask)
 		tex = Texture::create(nil);
 		if(tex == nil)
 			return nil;
-		strncpy(tex->name, name, 32);
+		strncpy(tex->name.data(), name, 32);
 		if(mask)
-			strncpy(tex->mask, mask, 32);
+			strncpy(tex->mask.data(), mask, 32);
 		raster = Raster::create(0, 0, 0, Raster::DONTALLOCATE);
 		tex->raster = raster;
 	}
@@ -435,13 +439,13 @@ Texture::streamWrite(Stream *stream)
 	stream->writeU32(filterAddressing);
 
 	memset(buf, 0, 36);
-	strncpy(buf, this->name, 32);
+	strncpy(buf, this->name.data(), 32);
 	size = strlen(buf)+4 & ~3;
 	writeChunkHeader(stream, ID_STRING, size);
 	stream->write8(buf, size);
 
 	memset(buf, 0, 36);
-	strncpy(buf, this->mask, 32);
+	strncpy(buf, this->mask.data(), 32);
 	size = strlen(buf)+4 & ~3;
 	writeChunkHeader(stream, ID_STRING, size);
 	stream->write8(buf, size);
@@ -456,8 +460,8 @@ Texture::streamGetSize(void)
 	uint32 size = 0;
 	size += 12 + 4;
 	size += 12 + 12;
-	size += strlen(this->name)+4 & ~3;
-	size += strlen(this->mask)+4 & ~3;
+	size += strlen(this->name.data())+4 & ~3;
+	size += strlen(this->mask.data())+4 & ~3;
 	size += 12 + s_plglist.streamGetSize(this);
 	return size;
 }

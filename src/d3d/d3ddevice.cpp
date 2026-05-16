@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -10,7 +10,10 @@
 #include "../rwrender.h"
 #include "../rwengine.h"
 #include "../rwpipeline.h"
-#include "../rwobjects.h"
+#include "../rwscene.h"
+#include "../rwgeometry.h"
+#include "../rwtexture.h"
+#include "../rwraster.h"
 #include "rwd3d.h"
 #include "rwd3dimpl.h"
 
@@ -1266,7 +1269,7 @@ beginUpdate(Camera *cam)
 	proj[9] = cam->viewOffset.y*invwy;
 	proj[12] = -proj[8];
 	proj[13] = -proj[9];
-	if(cam->projection == Camera::PERSPECTIVE){
+	if(cam->projection == Camera::Projection::Perspective){
 		proj[10] = cam->farPlane*invz;
 		proj[11] = 1.0f;
 

@@ -118,7 +118,7 @@ CreateCameras(rw::World *world)
 		world->addCamera(SubCameras[i]);
 
 		if(i > 0)
-			SubCameras[i]->setProjection(rw::Camera::PARALLEL);
+			SubCameras[i]->setProjection(rw::Camera::Projection::Parallel);
 	}
 
 	PositionSubCameras();

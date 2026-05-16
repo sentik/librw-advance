@@ -10,7 +10,7 @@ struct CameraData
 {
 	float farClipPlane;
 	float nearClipPlane;
-	rw::uint32 projection;
+	rw::Camera::Projection projection;
 	rw::V2d offset;
 	rw::V2d viewWindow;
 	rw::Camera *camera;

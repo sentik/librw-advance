@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
@@ -6,7 +6,8 @@
 #include "rwerror.h"
 #include "rwplg.h"
 #include "rwpipeline.h"
-#include "rwobjects.h"
+#include "rwscene.h"
+#include "rwraster.h"
 #include "rwengine.h"
 
 #define PLUGIN_ID ID_CAMERA
@@ -34,8 +35,8 @@ defaultEndUpdateCB(Camera *cam)
 static void
 buildPlanes(Camera *cam)
 {
-	V3d *c = cam->frustumCorners;
-	FrustumPlane *p = cam->frustumPlanes;
+	V3d *c = cam->frustumCorners.data();
+	FrustumPlane *p = cam->frustumPlanes.data();
 	V3d v51 = sub(c[1], c[5]);
 	V3d v73 = sub(c[3], c[7]);
 
@@ -94,7 +95,7 @@ buildClipPersp(Camera *cam)
 	/* First we calculate the 4 points on the view window. */
 	V3d up = scale(ltm->up, cam->viewWindow.y);
 	V3d left = scale(ltm->right, cam->viewWindow.x);
-	V3d *c = cam->frustumCorners;
+	V3d *c = cam->frustumCorners.data();
 	c[0] = add(add(ltm->at, up), left);	// top left
 	c[1] = sub(add(ltm->at, up), left);	// top right
 	c[2] = sub(sub(ltm->at, up), left);	// bottom right
@@ -122,7 +123,7 @@ buildClipParallel(Camera *cam)
 	float32 faroffx = -(1.0f - cam->farPlane)*cam->viewOffset.x;
 	float32 faroffy = (1.0f - cam->farPlane)*cam->viewOffset.y;
 
-	V3d *c = cam->frustumCorners;
+	V3d *c = cam->frustumCorners.data();
 	c[0].x = nearoffx + cam->viewWindow.x;
 	c[0].y = nearoffy + cam->viewWindow.y;
 	c[0].z = cam->nearPlane;
@@ -228,7 +229,7 @@ cameraSync(ObjectWithFrame *obj)
 	proj.up.y = -yscl;
 	proj.up.z = 0.0f;
 
-	if(cam->projection == Camera::PERSPECTIVE){
+	if(cam->projection == Camera::Projection::Perspective){
 		proj.pos.x = -cam->viewOffset.x*xscl;
 		proj.pos.y = cam->viewOffset.y*yscl;
 		proj.pos.z = 0.0f;
@@ -251,7 +252,7 @@ cameraSync(ObjectWithFrame *obj)
 		Matrix::mult(&cam->viewMatrix, &inv, &proj);
 		buildClipParallel(cam);
 	}
-	cam->frustumBoundBox.calculate(cam->frustumCorners, 8);
+	cam->frustumBoundBox.calculate(cam->frustumCorners.data(), 8);
 }
 
 void
@@ -292,7 +293,7 @@ Camera::create(void)
 	cam->nearPlane = 0.05f;
 	cam->farPlane = 10.0f;
 	cam->fogPlane = 5.0f;
-	cam->projection = Camera::PERSPECTIVE;
+	cam->projection = Camera::Projection::Perspective;
 
 	cam->frameBuffer = nil;
 	cam->zBuffer = nil;
@@ -372,7 +373,7 @@ calczShiftScale(Camera *cam)
 	// RW does this
 	N += (F - N)/10000.0f;
 	F -= (F - N)/10000.0f;
-	if(cam->projection == Camera::PERSPECTIVE){
+	if(cam->projection == Camera::Projection::Perspective){
 		cam->zScale = (N - F)*n*f/(f - n);
 		cam->zShift = (F*f - N*n)/(f - n);
 	}else{
@@ -416,24 +417,24 @@ Camera::setViewOffset(const V2d *offset)
 }
 
 void
-Camera::setProjection(int32 proj)
+Camera::setProjection(Projection proj)
 {
 	this->projection = proj;
 	if(this->getFrame())
 		this->getFrame()->updateObjects();
 }
 
-int32
+Camera::FrustumResult
 Camera::frustumTestSphere(const Sphere *s) const
 {
-	int32 res = SPHEREINSIDE;
-	const FrustumPlane *p = this->frustumPlanes;
+	FrustumResult res = FrustumResult::Inside;
+	const FrustumPlane *p = this->frustumPlanes.data();
 	for(int32 i = 0; i < 6; i++){
 		float32 dist = dot(p->plane.normal, s->center) - p->plane.distance;
 		if(s->radius < dist)
-			return SPHEREOUTSIDE;
+			return FrustumResult::Outside;
 		if(s->radius > -dist)
-			res = SPHEREBOUNDARY;
+			res = FrustumResult::Boundary;
 		p++;
 	}
 	return res;
@@ -463,7 +464,7 @@ Camera::streamRead(Stream *stream)
 	cam->nearPlane = buf.nearPlane;
 	cam->farPlane = buf.farPlane;
 	cam->fogPlane = buf.fogPlane;
-	cam->projection = buf.projection;
+	cam->projection = static_cast<Projection>(buf.projection);
 	if(s_plglist.streamRead(stream, cam))
 		return cam;
 	cam->destroy();
@@ -481,7 +482,7 @@ Camera::streamWrite(Stream *stream)
 	buf.nearPlane = this->nearPlane;
 	buf.farPlane  = this->farPlane;
 	buf.fogPlane = this->fogPlane;
-	buf.projection = this->projection;
+	buf.projection = static_cast<int32>(this->projection);
 	stream->write32(&buf, sizeof(CameraChunkData));
 	s_plglist.streamWrite(stream, this);
 	return true;

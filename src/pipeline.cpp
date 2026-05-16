@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -6,7 +6,7 @@
 #include "rwbase.h"
 #include "rwplg.h"
 #include "rwpipeline.h"
-#include "rwobjects.h"
+#include "rwscene.h"
 #include "rwengine.h"
 
 #define COLOR_ARGB(a,r,g,b) \

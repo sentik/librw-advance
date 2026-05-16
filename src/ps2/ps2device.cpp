@@ -1,4 +1,4 @@
-#ifdef RW_PS2
+﻿#ifdef RW_PS2
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +9,9 @@
 #include "../rwerror.h"
 #include "../rwplg.h"
 #include "../rwpipeline.h"
-#include "../rwobjects.h"
+#include "../rwscene.h"
+#include "../rwgeometry.h"
+#include "../rwtexture.h"
 #include "../rwengine.h"
 #include "../rwanim.h"
 #include "../rwplugins.h"

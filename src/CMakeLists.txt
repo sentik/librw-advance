@@ -26,11 +26,19 @@ add_library(librw
     rwanim.h
     rwengine.h
     rwerror.h
+    rwfwd.h
+    rwframe.h
+    rwgeometry.h
+    rwimage.h
+    rwobject.h
     rwobjects.h
     rwpipeline.h
     rwplg.h
     rwplugins.h
+    rwraster.h
     rwrender.h
+    rwscene.h
+    rwtexture.h
     rwuserdata.h
     skin.cpp
     texture.cpp
@@ -142,7 +150,7 @@ set_target_properties(librw
         C_STANDARD 11
         C_EXTENSIONS OFF
         C_STANDARD_REQUIRED ON
-        CXX_STANDARD 11
+        CXX_STANDARD 17
         CXX_EXTENSIONS OFF
         CXX_STANDARD_REQUIRED ON
         PREFIX ""
@@ -224,6 +232,14 @@ if(LIBRW_INSTALL)
             rwrender.h
             rwengine.h
             rwpipeline.h
+            rwfwd.h
+            rwobject.h
+            rwframe.h
+            rwimage.h
+            rwraster.h
+            rwtexture.h
+            rwgeometry.h
+            rwscene.h
             rwobjects.h
             rwanim.h
             rwplugins.h

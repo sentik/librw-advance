@@ -48,9 +48,9 @@ void
 ProjectionCallback(void)
 {
 	if(ProjectionIndex == 0)
-		SubCameraData.projection = rw::Camera::PERSPECTIVE;
+		SubCameraData.projection = rw::Camera::Projection::Perspective;
 	else
-		SubCameraData.projection = rw::Camera::PARALLEL;
+		SubCameraData.projection = rw::Camera::Projection::Parallel;
 	CameraSetData(&SubCameraData, PROJECTION);
 }
 
@@ -318,7 +318,7 @@ DrawCameraFrustum(CameraData *c)
 
 	for(int i = 0; i < 3; i++)	// depths
 		for(int j = 0; j < 4; j++){	// planes
-			if(c->projection == rw::Camera::PERSPECTIVE){
+			if(c->projection == rw::Camera::Projection::Perspective){
 				frustum[k].setX(-c->offset.x + depth[i]*(signs[j][0]*c->viewWindow.x + c->offset.x));
 				frustum[k].setY(c->offset.y + depth[i]*(signs[j][1]*c->viewWindow.y - c->offset.y));
 				frustum[k].setZ(depth[i]);

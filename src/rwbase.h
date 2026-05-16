@@ -1,6 +1,11 @@
+#pragma once
+#ifndef RW_BASE_H
+#define RW_BASE_H
+
 #ifndef RW_PS2
 #include <stdint.h>
 #endif
+#include <stddef.h>
 #include <math.h>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -714,3 +719,5 @@ bool findChunk(Stream *s, uint32 type, uint32 *length, uint32 *version);
 int32 findPointer(void *p, void **list, int32 num);
 uint8 *getFileContents(const char *name, uint32 *len);
 }
+
+#endif // RW_BASE_H
