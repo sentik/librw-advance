@@ -50,7 +50,7 @@ readNativeSkin(Stream *stream, int32, void *object, int32 offset)
 	}
 
 	Skin *skin = rwNewT(Skin, 1, MEMDUR_EVENT | ID_SKIN);
-	*PLUGINOFFSET(Skin*, geometry, offset) = skin;
+	*(Skin**)((uint8*)geometry + offset) = skin;
 
 	int32 numBones = stream->readI32();
 	skin->init(numBones, 0, 0);
@@ -76,7 +76,7 @@ writeNativeSkin(Stream *stream, int32 len, void *object, int32 offset)
 {
 	ASSERTLITTLE;
 	Geometry *geometry = (Geometry*)object;
-	Skin *skin = *PLUGINOFFSET(Skin*, object, offset);
+	Skin *skin = *(Skin**)((uint8*)object + offset);
 	assert(skin->platformData);
 	assert(rw::version >= 0x35000 && "can't handle native xbox skin < 0x35000");
 	NativeSkin *natskin = (NativeSkin*)skin->platformData;
@@ -102,7 +102,7 @@ int32
 getSizeNativeSkin(void *object, int32 offset)
 {
 	Geometry *geometry = (Geometry*)object;
-	Skin *skin = *PLUGINOFFSET(Skin*, object, offset);
+	Skin *skin = *(Skin**)((uint8*)object + offset);
 	if(skin == nil)
 		return -1;
 	if(skin->platformData == nil)

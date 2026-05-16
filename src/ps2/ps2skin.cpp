@@ -90,7 +90,7 @@ readNativeSkin(Stream *stream, int32, void *object, int32 offset)
 	}
 	stream->read8(header, 4);
 	Skin *skin = rwNewT(Skin, 1, MEMDUR_EVENT | ID_SKIN);
-	*PLUGINOFFSET(Skin*, geometry, offset) = skin;
+	*(Skin**)((uint8*)geometry + offset) = skin;
 
 	// numUsedBones and numWeights appear in/after 34003
 	// but not in/before 33002 (probably rw::version >= 0x34000)
@@ -131,7 +131,7 @@ writeNativeSkin(Stream *stream, int32 len, void *object, int32 offset)
 
 	writeChunkHeader(stream, ID_STRUCT, len-12);
 	stream->writeU32(PLATFORM_PS2);
-	Skin *skin = *PLUGINOFFSET(Skin*, object, offset);
+	Skin *skin = *(Skin**)((uint8*)object + offset);
 	// not sure which version introduced the new format
 	bool oldFormat = version < 0x34000;
 	header[0] = skin->numBones;
@@ -160,7 +160,7 @@ writeNativeSkin(Stream *stream, int32 len, void *object, int32 offset)
 int32
 getSizeNativeSkin(void *object, int32 offset)
 {
-	Skin *skin = *PLUGINOFFSET(Skin*, object, offset);
+	Skin *skin = *(Skin**)((uint8*)object + offset);
 	if(skin == nil)
 		return -1;
 	int32 size = 12 + 4 + 4 + skin->numBones*64;

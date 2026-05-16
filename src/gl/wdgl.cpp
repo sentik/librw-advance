@@ -584,7 +584,7 @@ readNativeSkin(Stream *stream, int32, void *object, int32 offset)
 		return nil;
 	}
 	Skin *skin = rwNewT(Skin, 1, MEMDUR_EVENT | ID_SKIN);
-	*PLUGINOFFSET(Skin*, geometry, offset) = skin;
+	*(Skin**)((uint8*)geometry + offset) = skin;
 
 	int32 numBones = stream->readI32();
 	skin->init(numBones, 0, 0);
@@ -597,7 +597,7 @@ writeNativeSkin(Stream *stream, int32 len, void *object, int32 offset)
 {
 	writeChunkHeader(stream, ID_STRUCT, len-12);
 	stream->writeU32(PLATFORM_GL);
-	Skin *skin = *PLUGINOFFSET(Skin*, object, offset);
+	Skin *skin = *(Skin**)((uint8*)object + offset);
 	stream->writeI32(skin->numBones);
 	stream->write32(skin->inverseMatrices, skin->numBones*64);
 	return stream;
@@ -606,7 +606,7 @@ writeNativeSkin(Stream *stream, int32 len, void *object, int32 offset)
 int32
 getSizeNativeSkin(void *object, int32 offset)
 {
-	Skin *skin = *PLUGINOFFSET(Skin*, object, offset);
+	Skin *skin = *(Skin**)((uint8*)object + offset);
 	if(skin == nil)
 		return -1;
 	int32 size = 12 + 4 + 4 + skin->numBones*64;
