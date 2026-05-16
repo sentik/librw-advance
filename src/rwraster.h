@@ -116,6 +116,33 @@ struct Raster
 		PRIVATELOCK_READ_PALETTE	= 0x08,
 		PRIVATELOCK_WRITE_PALETTE	= 0x10,
 	};
+
+	struct LockGuard {
+		LockGuard(Raster *r, int32 level, int32 mode)
+			: raster(r), level(level), pixels(r->lock(level, mode)) {}
+		~LockGuard() { if(raster) raster->unlock(level); }
+		LockGuard(const LockGuard&) = delete;
+		LockGuard& operator=(const LockGuard&) = delete;
+		[[nodiscard]] uint8 *data() const noexcept { return pixels; }
+		[[nodiscard]] explicit operator bool() const noexcept { return pixels != nullptr; }
+	private:
+		Raster *raster;
+		int32   level;
+		uint8  *pixels;
+	};
+
+	struct PaletteLockGuard {
+		PaletteLockGuard(Raster *r, int32 mode)
+			: raster(r), pixels(r->lockPalette(mode)) {}
+		~PaletteLockGuard() { if(raster) raster->unlockPalette(); }
+		PaletteLockGuard(const PaletteLockGuard&) = delete;
+		PaletteLockGuard& operator=(const PaletteLockGuard&) = delete;
+		[[nodiscard]] uint8 *data() const noexcept { return pixels; }
+		[[nodiscard]] explicit operator bool() const noexcept { return pixels != nullptr; }
+	private:
+		Raster *raster;
+		uint8  *pixels;
+	};
 };
 
 void conv_RGBA8888_from_RGBA8888(uint8 *out, uint8 *in);

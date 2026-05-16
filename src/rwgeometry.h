@@ -189,6 +189,15 @@ struct Geometry
 
 		LOCKALL          = 0x0fff
 	};
+
+	struct LockGuard {
+		LockGuard(Geometry *g, int32 lockFlags) : geo(g) { g->lock(lockFlags); }
+		~LockGuard() { if(geo) geo->unlock(); }
+		LockGuard(const LockGuard&) = delete;
+		LockGuard& operator=(const LockGuard&) = delete;
+	private:
+		Geometry *geo;
+	};
 };
 
 void registerMeshPlugin(void);
