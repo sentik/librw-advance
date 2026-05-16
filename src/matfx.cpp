@@ -13,6 +13,7 @@
 #include "rwengine.h"
 #include "rwanim.h"
 #include "rwplugins.h"
+#include "rw/plugin/object_registry.h"
 #include "ps2/rwps2.h"
 #include "ps2/rwps2plg.h"
 #include "d3d/rwxbox.h"
@@ -622,13 +623,38 @@ registerMatFXPlugin(void)
 	wdgl::initMatFX();
 	gl3::initMatFX();
 
-	matFXGlobals.atomicOffset =
-	Atomic::registerPlugin(sizeof(int32), ID_MATFX,
-	                       createAtomicMatFX, nil, copyAtomicMatFX);
-	Atomic::registerPluginStream(ID_MATFX,
-	                             readAtomicMatFX,
-	                             writeAtomicMatFX,
-	                             getSizeAtomicMatFX);
+	{
+		using namespace rw::plugin;
+		auto& reg = ObjectRegistry<Atomic>::instance();
+		auto result = reg.registerExtension<int32>(fromRaw(ID_MATFX),
+		    PluginLifecycle{
+		        .construct = [](void* o, std::ptrdiff_t off) {
+		            createAtomicMatFX(o, static_cast<int32>(off), 0);
+		        },
+		        .copy = [](void* d, const void* s, std::ptrdiff_t off) {
+		            copyAtomicMatFX(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+		        },
+		    },
+		    PluginStream{
+		        .read = [](rw::Stream& stream, std::int32_t len, void* o, std::ptrdiff_t off)
+		            -> std::expected<void, StreamPluginError> {
+		            readAtomicMatFX(&stream, static_cast<int32>(len), o, static_cast<int32>(off), 0);
+		            return {};
+		        },
+		        .write = [](rw::Stream& stream, std::int32_t len, const void* o, std::ptrdiff_t off)
+		            -> std::expected<void, StreamPluginError> {
+		            writeAtomicMatFX(&stream, static_cast<int32>(len),
+		                             const_cast<void*>(o), static_cast<int32>(off), 0);
+		            return {};
+		        },
+		        .getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
+		            return getSizeAtomicMatFX(const_cast<void*>(o), static_cast<int32>(off), 0);
+		        },
+		    },
+		    "matfx-atomic");
+		if(result)
+			matFXGlobals.atomicOffset = static_cast<int32>(result->value());
+	}
 
 	matFXGlobals.materialOffset =
 	Material::registerPlugin(sizeof(MatFX*), ID_MATFX,

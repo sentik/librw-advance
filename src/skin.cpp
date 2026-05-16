@@ -15,6 +15,7 @@
 #include "rwanim.h"
 #include "rwengine.h"
 #include "rwplugins.h"
+#include "rw/plugin/object_registry.h"
 #include "ps2/rwps2.h"
 #include "ps2/rwps2plg.h"
 #include "d3d/rwxbox.h"
@@ -384,12 +385,35 @@ registerSkinPlugin(void)
 	Geometry::registerPluginStream(ID_SKIN,
 	                               readSkin, writeSkin, getSizeSkin);
 	skinGlobals.geoOffset = o;
-	o = Atomic::registerPlugin(sizeof(HAnimHierarchy*),ID_SKIN,
-	                           createSkinAtm, destroySkinAtm, copySkinAtm);
-	skinGlobals.atomicOffset = o;
-	Atomic::registerPluginStream(ID_SKIN, readSkinLegacy, nil, nil);
-	Atomic::setStreamRightsCallback(ID_SKIN, skinRights);
-	Atomic::setStreamAlwaysCallback(ID_SKIN, skinAlways);
+	{
+		using namespace rw::plugin;
+		auto& reg = ObjectRegistry<Atomic>::instance();
+		auto result = reg.registerExtension<HAnimHierarchy*>(fromRaw(ID_SKIN),
+		    PluginLifecycle{
+		        .construct = [](void* o, std::ptrdiff_t off) {
+		            createSkinAtm(o, static_cast<int32>(off), 0);
+		        },
+		        .copy = [](void* d, const void* s, std::ptrdiff_t off) {
+		            copySkinAtm(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+		        },
+		    },
+		    PluginStream{
+		        .read = [](rw::Stream& stream, std::int32_t len, void* o, std::ptrdiff_t)
+		            -> std::expected<void, StreamPluginError> {
+		            readSkinLegacy(&stream, static_cast<int32>(len), o, 0, 0);
+		            return {};
+		        },
+		        .rights = [](void* o, std::ptrdiff_t, std::uint32_t data) {
+		            skinRights(o, 0, 0, data);
+		        },
+		        .always = [](void* o, std::ptrdiff_t) {
+		            skinAlways(o, 0, 0);
+		        },
+		    },
+		    "skin-atomic");
+		if(result)
+			skinGlobals.atomicOffset = static_cast<int32>(result->value());
+	}
 }
 
 void

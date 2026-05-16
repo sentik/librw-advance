@@ -10,6 +10,7 @@
 #include "rwscene.h"
 #include "rwgeometry.h"
 #include "rwengine.h"
+#include "rw/plugin/object_registry.h"
 
 #define PLUGIN_ID 2
 
@@ -412,9 +413,11 @@ worldAtomicSync(ObjectWithFrame *obj)
 Atomic*
 Atomic::create(void)
 {
-	Atomic *atomic = (Atomic*)rwMalloc(s_plglist.size, MEMDUR_EVENT | ID_ATOMIC);
+	auto& reg = rw::plugin::ObjectRegistry<Atomic>::instance();
+	auto sz = reg.objectSize();
+	Atomic *atomic = (Atomic*)rwMalloc(sz, MEMDUR_EVENT | ID_ATOMIC);
 	if(atomic == nil){
-		RWERROR((ERR_ALLOC, s_plglist.size));
+		RWERROR((ERR_ALLOC, sz));
 		return nil;
 	}
 	numAllocated++;
@@ -439,7 +442,7 @@ Atomic::create(void)
 	atomic->originalSync = atomic->object.syncCB;
 	atomic->object.syncCB = worldAtomicSync;
 
-	s_plglist.construct(atomic);
+	reg.construct(*atomic);
 	return atomic;
 }
 
@@ -458,14 +461,14 @@ Atomic::clone()
 
 	// World extension doesn't add to world
 
-	s_plglist.copy(atomic, this);
+	rw::plugin::ObjectRegistry<Atomic>::instance().copyAll(*atomic, *this);
 	return atomic;
 }
 
 void
 Atomic::destroy(void)
 {
-	s_plglist.destruct(this);
+	rw::plugin::ObjectRegistry<Atomic>::instance().destruct(*this);
 	if(this->geometry)
 		this->geometry->destroy();
 	assert(this->clump == nil);
@@ -541,10 +544,11 @@ Atomic::streamReadClump(Stream *stream,
 	atomic->object.object.flags = buf[2];
 
 	atomicRights[0] = 0;
-	if(!s_plglist.streamRead(stream, atomic))
+	if(!rw::plugin::ObjectRegistry<Atomic>::instance().streamRead(*stream, *atomic))
 		goto fail;
 	if(atomicRights[0])
-		s_plglist.assertRights(atomic, atomicRights[0], atomicRights[1]);
+		rw::plugin::ObjectRegistry<Atomic>::instance().assertRights(
+		    *atomic, rw::plugin::fromRaw(atomicRights[0]), atomicRights[1]);
 	return atomic;
 
 fail:
@@ -580,14 +584,15 @@ Atomic::streamWriteClump(Stream *stream, FrameList_ *frmlst)
 		stream->write32(buf, sizeof(buf));
 	}
 
-	s_plglist.streamWrite(stream, this);
+	(void)rw::plugin::ObjectRegistry<Atomic>::instance().streamWrite(*stream, *this);
 	return true;
 }
 
 uint32
 Atomic::streamGetSize(void)
 {
-	uint32 size = 12 + 12 + 12 + s_plglist.streamGetSize(this);
+	uint32 size = 12 + 12 + 12 +
+	    static_cast<uint32>(rw::plugin::ObjectRegistry<Atomic>::instance().streamGetSize(*this));
 	if(rw::version < 0x30400)
 		size += 12 + this->geometry->streamGetSize();
 	else
@@ -628,43 +633,35 @@ Atomic::defaultRenderCB(Atomic *atomic)
 	atomic->getPipeline()->render(atomic);
 }
 
-// Atomic Rights plugin
-
-static Stream*
-readAtomicRights(Stream *stream, int32, void *, int32, int32)
-{
-	stream->read32(atomicRights, 8);
-	return stream;
-}
-
-static Stream*
-writeAtomicRights(Stream *stream, int32, void *object, int32, int32)
-{
-	Atomic *atomic = (Atomic*)object;
-	uint32 buffer[2];
-	buffer[0] = atomic->pipeline->pluginID;
-	buffer[1] = atomic->pipeline->pluginData;
-	stream->write32(buffer, 8);
-	return stream;
-}
-
-static int32
-getSizeAtomicRights(void *object, int32, int32)
-{
-	Atomic *atomic = (Atomic*)object;
-	if(atomic->pipeline == nil || atomic->pipeline->pluginID == 0)
-		return 0;
-	return 8;
-}
-
 void
 registerAtomicRightsPlugin(void)
 {
-	Atomic::registerPlugin(0, ID_RIGHTTORENDER, nil, nil, nil);
-	Atomic::registerPluginStream(ID_RIGHTTORENDER,
-	                             readAtomicRights,
-	                             writeAtomicRights,
-	                             getSizeAtomicRights);
+	using namespace rw::plugin;
+	auto& reg = ObjectRegistry<Atomic>::instance();
+	(void)reg.registerStreamPlugin(fromRaw(ID_RIGHTTORENDER),
+	    PluginStream{
+	        .read = [](rw::Stream& stream, std::int32_t, void*, std::ptrdiff_t)
+	            -> std::expected<void, StreamPluginError> {
+	            stream.read32(atomicRights, 8);
+	            return {};
+	        },
+	        .write = [](rw::Stream& stream, std::int32_t, const void* object, std::ptrdiff_t)
+	            -> std::expected<void, StreamPluginError> {
+	            const Atomic* atomic = static_cast<const Atomic*>(object);
+	            uint32 buffer[2];
+	            buffer[0] = atomic->pipeline->pluginID;
+	            buffer[1] = atomic->pipeline->pluginData;
+	            stream.write32(buffer, 8);
+	            return {};
+	        },
+	        .getSize = [](const void* object, std::ptrdiff_t) -> std::int32_t {
+	            const Atomic* atomic = static_cast<const Atomic*>(object);
+	            if(atomic->pipeline == nil || atomic->pipeline->pluginID == 0)
+	                return 0;
+	            return 8;
+	        },
+	    },
+	    "atomic-rights");
 }
 
 }

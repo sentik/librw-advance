@@ -11,6 +11,7 @@
 #include "../rwengine.h"
 #include "../rwanim.h"
 #include "../rwplugins.h"
+#include "../rw/plugin/object_registry.h"
 #include "rwps2.h"
 #include "rwps2plg.h"
 
@@ -75,8 +76,15 @@ registerPDSPlugin(int32 n)
 	pdsGlobals.numPipes = 0;
 	pdsGlobals.pipes = nil;
 	Engine::registerPlugin(0, ID_PDS, pdsOpen, pdsClose);
-	Atomic::registerPlugin(0, ID_PDS, nil, nil, nil);
-	Atomic::setStreamRightsCallback(ID_PDS, atomicPDSRights);
+	{
+		using namespace rw::plugin;
+		(void)ObjectRegistry<Atomic>::instance().registerRightsPlugin(
+		    fromRaw(ID_PDS),
+		    [](void* o, std::ptrdiff_t, std::uint32_t data) {
+		        atomicPDSRights(o, 0, 0, data);
+		    },
+		    "pds-atomic");
+	}
 
 	Material::registerPlugin(0, ID_PDS, nil, nil, nil);
 	Material::setStreamRightsCallback(ID_PDS, materialPDSRights);
