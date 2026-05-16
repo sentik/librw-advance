@@ -13,6 +13,7 @@
 #include "../rwgeometry.h"
 #include "../rwimage.h"
 #include "../rwengine.h"
+#include "../rw/plugin/object_registry.h"
 #include "rwd3d.h"
 #include "rwd3dimpl.h"
 
@@ -1079,11 +1080,24 @@ copyNativeRaster(void *dst, void *, int32 offset, int32)
 void
 registerNativeRaster(void)
 {
-	nativeRasterOffset = Raster::registerPlugin(sizeof(D3dRaster),
-	                                            ID_RASTERD3D9,
-	                                            createNativeRaster,
-	                                            destroyNativeRaster,
-	                                            copyNativeRaster);
+	using namespace rw::plugin;
+	auto& reg = ObjectRegistry<Raster>::instance();
+	auto result = reg.registerExtension<D3dRaster>(fromRaw(ID_RASTERD3D9),
+		PluginLifecycle{
+			.construct = [](void* o, std::ptrdiff_t off) {
+				createNativeRaster(o, static_cast<int32>(off), 0);
+			},
+			.destruct = [](void* o, std::ptrdiff_t off) {
+				destroyNativeRaster(o, static_cast<int32>(off), 0);
+			},
+			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
+				copyNativeRaster(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+			},
+		},
+		PluginStream{},
+		"nativeraster-d3d9");
+	if(result)
+		nativeRasterOffset = static_cast<int32>(result->value());
 }
 
 }

@@ -8,6 +8,7 @@
 #include "rwplg.h"
 #include "rwpipeline.h"
 #include "rwraster.h"
+#include "rw/plugin/object_registry.h"
 #include "rwscene.h"
 #include "rwgeometry.h"
 #include "rwtexture.h"
@@ -62,7 +63,8 @@ Raster*
 Raster::create(int32 width, int32 height, int32 depth, int32 format, int32 platform)
 {
 	// TODO: pass arguments through to the driver and create the raster there
-	Raster *raster = (Raster*)rwMalloc(s_plglist.size, MEMDUR_EVENT);	// TODO
+	auto& ras_reg = rw::plugin::ObjectRegistry<Raster>::instance();
+	Raster *raster = (Raster*)rwMalloc(ras_reg.objectSize(), MEMDUR_EVENT);	// TODO
 	assert(raster != nil);
 	numAllocated++;
 	raster->parent = raster;
@@ -78,7 +80,7 @@ Raster::create(int32 width, int32 height, int32 depth, int32 format, int32 platf
 	raster->depth = depth;
 	raster->stride = 0;
 	raster->pixels = raster->palette = nil;
-	s_plglist.construct(raster);
+	ras_reg.construct(*raster);
 
 //	printf("%d %d %d %d\n", raster->type, raster->width, raster->height, raster->depth);
 	return engine->driver[raster->platform]->rasterCreate(raster);
@@ -99,7 +101,7 @@ Raster::subRaster(Raster *parent, Rect *r)
 void
 Raster::destroy(void)
 {
-	s_plglist.destruct(this);
+	rw::plugin::ObjectRegistry<Raster>::instance().destruct(*this);
 	rwFree(this);
 	numAllocated--;
 }

@@ -13,6 +13,7 @@
 #include "../rwraster.h"
 #include "../rwimage.h"
 #include "../rwengine.h"
+#include "../rw/plugin/object_registry.h"
 
 #include "rwgl3.h"
 #include "rwgl3shader.h"
@@ -1038,11 +1039,24 @@ getSizeNativeTexture(Texture *tex)
 
 void registerNativeRaster(void)
 {
-	nativeRasterOffset = Raster::registerPlugin(sizeof(Gl3Raster),
-	                                            ID_RASTERGL3,
-	                                            createNativeRaster,
-	                                            destroyNativeRaster,
-	                                            copyNativeRaster);
+	using namespace rw::plugin;
+	auto& reg = ObjectRegistry<Raster>::instance();
+	auto result = reg.registerExtension<Gl3Raster>(fromRaw(ID_RASTERGL3),
+		PluginLifecycle{
+			.construct = [](void* o, std::ptrdiff_t off) {
+				createNativeRaster(o, static_cast<int32>(off), 0);
+			},
+			.destruct = [](void* o, std::ptrdiff_t off) {
+				destroyNativeRaster(o, static_cast<int32>(off), 0);
+			},
+			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
+				copyNativeRaster(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+			},
+		},
+		PluginStream{},
+		"nativeraster-gl3");
+	if(result)
+		nativeRasterOffset = static_cast<int32>(result->value());
 }
 
 }

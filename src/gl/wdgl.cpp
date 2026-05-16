@@ -819,11 +819,24 @@ copyNativeRaster(void *dst, void *, int32 offset, int32)
 void
 registerNativeRaster(void)
 {
-	nativeRasterOffset = Raster::registerPlugin(sizeof(GlRaster),
-	                                            ID_RASTERWDGL,
-	                                            createNativeRaster,
-	                                            destroyNativeRaster,
-	                                            copyNativeRaster);
+	using namespace rw::plugin;
+	auto& reg = ObjectRegistry<Raster>::instance();
+	auto result = reg.registerExtension<GlRaster>(fromRaw(ID_RASTERWDGL),
+		PluginLifecycle{
+			.construct = [](void* o, std::ptrdiff_t off) {
+				createNativeRaster(o, static_cast<int32>(off), 0);
+			},
+			.destruct = [](void* o, std::ptrdiff_t off) {
+				destroyNativeRaster(o, static_cast<int32>(off), 0);
+			},
+			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
+				copyNativeRaster(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+			},
+		},
+		PluginStream{},
+		"nativeraster-wdgl");
+	if(result)
+		nativeRasterOffset = static_cast<int32>(result->value());
 }
 
 void
