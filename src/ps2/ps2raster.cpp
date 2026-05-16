@@ -6,6 +6,7 @@
 #include "../rwbase.h"
 #include "../rwerror.h"
 #include "../rwplg.h"
+#include "../rw/plugin/object_registry.h"
 #include "../rwpipeline.h"
 #include "../rwtexture.h"
 #include "../rwscene.h"
@@ -1901,8 +1902,30 @@ registerNativeRaster(void)
 	                                            destroyNativeRaster,
 	                                            copyNativeRaster);
 
-	Texture::registerPlugin(0, ID_SKYMIPMAP, nil, nil, nil);
-	Texture::registerPluginStream(ID_SKYMIPMAP, readMipmap, writeMipmap, getSizeMipmap);
+	// skymipmap is stream-only for Texture (size=0) — use new stream-only path.
+	{
+		using namespace rw::plugin;
+		PluginStream st{
+			.read = [](Stream& s, std::int32_t len, void* o, std::ptrdiff_t)
+			        -> std::expected<void, StreamPluginError> {
+				auto* r = readMipmap(&s, len, o, 0, 0);
+				return r ? std::expected<void, StreamPluginError>{} :
+				           std::unexpected(StreamPluginError::ioFailure);
+			},
+			.write = [](Stream& s, std::int32_t len, const void* o, std::ptrdiff_t)
+			         -> std::expected<void, StreamPluginError> {
+				auto* r = writeMipmap(&s, len,
+				    const_cast<void*>(o), 0, 0);
+				return r ? std::expected<void, StreamPluginError>{} :
+				           std::unexpected(StreamPluginError::ioFailure);
+			},
+			.getSize = [](const void* o, std::ptrdiff_t) -> std::int32_t {
+				return getSizeMipmap(const_cast<void*>(o), 0, 0);
+			},
+		};
+		(void)ObjectRegistry<Texture>::instance().registerStreamPlugin(
+		    fromRaw(ID_SKYMIPMAP), std::move(st), "skymipmap");
+	}
 }
 
 void

@@ -5,6 +5,7 @@
 
 #define WITH_D3D
 #include "rwbase.h"
+#include "rw/plugin/object_registry.h"
 #include "rwerror.h"
 #include "rwplg.h"
 #include "rwpipeline.h"
@@ -203,7 +204,7 @@ TexDictionary::streamRead(Stream *stream)
 		tex = Texture::streamReadNative(stream);
 		if(tex == nil)
 			goto fail;
-		Texture::s_plglist.streamRead(stream, tex);
+		(void)rw::plugin::ObjectRegistry<Texture>::instance().streamRead(*stream, *tex);
 		txd->add(tex);
 	}
 	if(s_plglist.streamRead(stream, txd))
@@ -224,10 +225,11 @@ TexDictionary::streamWrite(Stream *stream)
 	FORLIST(lnk, this->textures){
 		Texture *tex = Texture::fromDict(lnk);
 		uint32 sz = tex->streamGetSizeNative();
-		sz += 12 + Texture::s_plglist.streamGetSize(tex);
+		auto& texReg = rw::plugin::ObjectRegistry<Texture>::instance();
+		sz += 12 + static_cast<uint32>(texReg.streamGetSize(*tex));
 		writeChunkHeader(stream, ID_TEXTURENATIVE, sz);
 		tex->streamWriteNative(stream);
-		Texture::s_plglist.streamWrite(stream, tex);
+		(void)texReg.streamWrite(*stream, *tex);
 	}
 	s_plglist.streamWrite(stream, this);
 }
@@ -239,7 +241,7 @@ TexDictionary::streamGetSize(void)
 	FORLIST(lnk, this->textures){
 		Texture *tex = Texture::fromDict(lnk);
 		size += 12 + tex->streamGetSizeNative();
-		size += 12 + Texture::s_plglist.streamGetSize(tex);
+		size += 12 + static_cast<uint32>(rw::plugin::ObjectRegistry<Texture>::instance().streamGetSize(*tex));
 	}
 	size += 12 + s_plglist.streamGetSize(this);
 	return size;
@@ -270,9 +272,11 @@ Texture *(*Texture::readCB)(const char *name, const char *mask) = defaultReadCB;
 Texture*
 Texture::create(Raster *raster)
 {
-	Texture *tex = (Texture*)rwMalloc(s_plglist.size, MEMDUR_EVENT | ID_TEXTURE);
+	auto& reg = rw::plugin::ObjectRegistry<Texture>::instance();
+	auto sz = reg.objectSize();
+	Texture *tex = (Texture*)rwMalloc(sz, MEMDUR_EVENT | ID_TEXTURE);
 	if(tex == nil){
-		RWERROR((ERR_ALLOC, s_plglist.size));
+		RWERROR((ERR_ALLOC, sz));
 		return nil;
 	}
 	numAllocated++;
@@ -284,7 +288,7 @@ Texture::create(Raster *raster)
 	tex->raster = raster;
 	tex->refCount = 1;
 	TEXTUREGLOBAL(textures).add(&tex->inGlobalList);
-	s_plglist.construct(tex);
+	reg.construct(*tex);
 	return tex;
 }
 
@@ -293,7 +297,7 @@ Texture::destroy(void)
 {
 	this->refCount--;
 	if(this->refCount <= 0){
-		s_plglist.destruct(this);
+		rw::plugin::ObjectRegistry<Texture>::instance().destruct(*this);
 		if(this->dict)
 			this->inDict.remove();
 		if(this->raster)
@@ -525,63 +529,61 @@ Texture::streamGetSizeNative(void)
 
 
 
-int32 anisotOffset;
-
-static void*
-createAnisot(void *object, int32 offset, int32)
-{
-	*GETANISOTROPYEXT(object) = 1;
-	return object;
-}
-
-static void*
-copyAnisot(void *dst, void *src, int32 offset, int32)
-{
-	*GETANISOTROPYEXT(dst) = *GETANISOTROPYEXT(src);
-	return dst;
-}
-
-static Stream*
-readAnisot(Stream *stream, int32, void *object, int32 offset, int32)
-{
-	*GETANISOTROPYEXT(object) = stream->readI32();
-	return stream;
-}
-
-static Stream*
-writeAnisot(Stream *stream, int32, void *object, int32 offset, int32)
-{
-	stream->writeI32(*GETANISOTROPYEXT(object));
-	return stream;
-}
-
-static int32
-getSizeAnisot(void *object, int32 offset, int32)
-{
-	if(*GETANISOTROPYEXT(object) == 1)
-		return 0;
-	return sizeof(int32);
-}
+static rw::plugin::PluginOffset<Texture, int32> anisotOffset;
 
 void
 registerAnisotropyPlugin(void)
 {
-	anisotOffset = Texture::registerPlugin(sizeof(int32), ID_ANISOT, createAnisot, nil, copyAnisot);
-	Texture::registerPluginStream(ID_ANISOT, readAnisot, writeAnisot, getSizeAnisot);
+	using namespace rw::plugin;
+	auto& reg = ObjectRegistry<Texture>::instance();
+
+	PluginLifecycle lc{
+		.construct = [](void* o, std::ptrdiff_t off) {
+			*reinterpret_cast<int32*>(static_cast<std::byte*>(o) + off) = 1;
+		},
+		.copy = [](void* d, const void* s, std::ptrdiff_t off) {
+			*reinterpret_cast<int32*>(static_cast<std::byte*>(d) + off) =
+			*reinterpret_cast<const int32*>(static_cast<const std::byte*>(s) + off);
+		},
+		// no destruct: int32 is trivially destructible
+	};
+
+	PluginStream st{
+		.read = [](Stream& stream, std::int32_t, void* o, std::ptrdiff_t off)
+		        -> std::expected<void, StreamPluginError> {
+			*reinterpret_cast<int32*>(static_cast<std::byte*>(o) + off) = stream.readI32();
+			return {};
+		},
+		.write = [](Stream& stream, std::int32_t, const void* o, std::ptrdiff_t off)
+		         -> std::expected<void, StreamPluginError> {
+			stream.writeI32(*reinterpret_cast<const int32*>(
+			    static_cast<const std::byte*>(o) + off));
+			return {};
+		},
+		.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
+			return (*reinterpret_cast<const int32*>(
+			    static_cast<const std::byte*>(o) + off) == 1) ? 0 : sizeof(int32);
+		},
+	};
+
+	auto result = reg.registerExtension<int32>(
+	    fromRaw(ID_ANISOT), std::move(lc), std::move(st), "anisotropy");
+	if(result)
+		anisotOffset = *result;
 }
 
 void
 Texture::setMaxAnisotropy(int32 maxaniso)
 {
-	if(anisotOffset > 0)
-		*GETANISOTROPYEXT(this) = maxaniso;
+	if(anisotOffset)
+		rw::plugin::extension(*this, anisotOffset) = maxaniso;
 }
 
 int32
 Texture::getMaxAnisotropy(void)
 {
-	if(anisotOffset > 0)
-		return *GETANISOTROPYEXT(this);
+	if(anisotOffset)
+		return rw::plugin::extension(*this, anisotOffset);
 	return 1;
 }
 

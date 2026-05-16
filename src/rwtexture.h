@@ -82,8 +82,6 @@ struct Texture
 #endif
 };
 
-extern int32 anisotOffset;
-#define GETANISOTROPYEXT(texture) PLUGINOFFSET(int32, texture, rw::anisotOffset)
 void registerAnisotropyPlugin(void);
 int32 getMaxSupportedMaxAnisotropy(void);
 

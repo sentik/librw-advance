@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include "rwbase.h"
+#include "rw/plugin/object_registry.h"
 #include "rwerror.h"
 #include "rwplg.h"
 #include "rwpipeline.h"
@@ -358,9 +359,45 @@ registerUserDataPlugin(void)
 		ID_USERDATA, createUserData, destroyUserData, copyUserData);
 	Material::registerPluginStream(ID_USERDATA, readUserData, writeUserData, getSizeUserData);
 
-	userDataGlobals.textureOffset = Texture::registerPlugin(sizeof(UserDataExtension),
-		ID_USERDATA, createUserData, destroyUserData, copyUserData);
-	Texture::registerPluginStream(ID_USERDATA, readUserData, writeUserData, getSizeUserData);
+	// Texture is fully migrated to the typed plugin layer.
+	{
+		using namespace rw::plugin;
+		auto& reg = ObjectRegistry<Texture>::instance();
+		PluginLifecycle lc{
+			.construct = [](void* o, std::ptrdiff_t off) {
+				createUserData(o, static_cast<int32>(off), 0);
+			},
+			.destruct = [](void* o, std::ptrdiff_t off) {
+				destroyUserData(o, static_cast<int32>(off), 0);
+			},
+			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
+				copyUserData(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+			},
+		};
+		PluginStream st{
+			.read = [](Stream& s, std::int32_t len, void* o, std::ptrdiff_t off)
+			        -> std::expected<void, StreamPluginError> {
+				auto* r = readUserData(&s, len, o, static_cast<int32>(off), 0);
+				return r ? std::expected<void, StreamPluginError>{} :
+				           std::unexpected(StreamPluginError::ioFailure);
+			},
+			.write = [](Stream& s, std::int32_t len, const void* o, std::ptrdiff_t off)
+			         -> std::expected<void, StreamPluginError> {
+				auto* r = writeUserData(&s, len,
+				    const_cast<void*>(o), static_cast<int32>(off), 0);
+				return r ? std::expected<void, StreamPluginError>{} :
+				           std::unexpected(StreamPluginError::ioFailure);
+			},
+			.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
+				return getSizeUserData(const_cast<void*>(o),
+				    static_cast<int32>(off), 0);
+			},
+		};
+		auto result = reg.registerExtension<UserDataExtension>(
+		    fromRaw(ID_USERDATA), std::move(lc), std::move(st), "userdata-texture");
+		if(result)
+			userDataGlobals.textureOffset = static_cast<int32>(result->value());
+	}
 }
 
 }
