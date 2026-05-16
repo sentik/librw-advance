@@ -17,8 +17,6 @@ namespace rw {
 
 int32 Camera::numAllocated;
 
-PluginList Camera::s_plglist(sizeof(Camera));
-
 void
 defaultBeginUpdateCB(Camera *cam)
 {

@@ -20,9 +20,6 @@ namespace rw {
 int32 Geometry::numAllocated;
 int32 Material::numAllocated;
 
-PluginList Geometry::s_plglist(sizeof(Geometry));
-PluginList Material::s_plglist(sizeof(Material));
-
 static SurfaceProperties defaultSurfaceProps = { 1.0f, 1.0f, 1.0f };
 
 // We allocate twice because we have to allocate the data separately for uninstancing

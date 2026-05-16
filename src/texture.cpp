@@ -30,10 +30,6 @@ namespace rw {
 int32 Texture::numAllocated;
 int32 TexDictionary::numAllocated;
 
-PluginList TexDictionary::s_plglist(sizeof(TexDictionary));
-PluginList Texture::s_plglist(sizeof(Texture));
-PluginList Raster::s_plglist(sizeof(Raster));
-
 struct TextureGlobals
 {
 	TexDictionary *initialTexDict;

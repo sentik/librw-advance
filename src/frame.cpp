@@ -16,7 +16,6 @@ namespace rw {
 
 int32 Frame::numAllocated;
 
-PluginList Frame::s_plglist(sizeof(Frame));
 static void *frameOpen(void *object, int32 offset, int32 size) { engine->frameDirtyList.init(); return object; }
 static void *frameClose(void *object, int32 offset, int32 size) { return object; }
 

@@ -18,8 +18,6 @@ namespace rw {
 
 int32 World::numAllocated = 0;
 
-PluginList World::s_plglist(sizeof(World));
-
 World*
 World::create(BBox *bbox)
 {

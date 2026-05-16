@@ -19,9 +19,6 @@ namespace rw {
 int32 Clump::numAllocated;
 int32 Atomic::numAllocated;
 
-PluginList Clump::s_plglist(sizeof(Clump));
-PluginList Atomic::s_plglist(sizeof(Atomic));
-
 //
 // Clump
 //

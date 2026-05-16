@@ -21,7 +21,6 @@ struct SurfaceProperties
 
 struct Material
 {
-	PLUGINBASE
 	using plugin_owner_tag = Material;
 	Texture *texture;
 	RGBA color;
@@ -105,7 +104,6 @@ struct MaterialList
 
 struct Geometry
 {
-	PLUGINBASE
 	using plugin_owner_tag = Geometry;
 	static inline constexpr int32 ID = 8;
 	Object object;

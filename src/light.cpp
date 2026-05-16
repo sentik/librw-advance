@@ -16,8 +16,6 @@ namespace rw {
 
 int32 Light::numAllocated;
 
-PluginList Light::s_plglist(sizeof(Light));
-
 static void
 lightSync(ObjectWithFrame*)
 {

@@ -24,7 +24,6 @@ struct Raster
 {
 	enum { FLIPWAITVSYNCH = 1 };
 
-	PLUGINBASE
 	using plugin_owner_tag = Raster;
 	int32 platform;
 

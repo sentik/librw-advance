@@ -28,10 +28,6 @@ struct Texture
 		BORDER
 	};
 
-	PLUGINBASE
-	// Marker for the new typed plugin layer (rw::plugin::PluginOwner concept).
-	// Coexists with PLUGINBASE; legacy system is still authoritative until the
-	// owner-wide migration completes (see plan Phase 4).
 	using plugin_owner_tag = Texture;
 
 	Raster *raster;
@@ -87,7 +83,6 @@ int32 getMaxSupportedMaxAnisotropy(void);
 
 struct TexDictionary
 {
-	PLUGINBASE
 	using plugin_owner_tag = TexDictionary;
 	static inline constexpr int32 ID = 6;
 	Object object;

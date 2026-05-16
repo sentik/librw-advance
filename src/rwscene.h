@@ -16,7 +16,6 @@ namespace rw {
 
 struct Atomic
 {
-	PLUGINBASE
 	using plugin_owner_tag = Atomic;
 	using RenderCB = void(*)(Atomic *atomic);
 	static inline constexpr int32 ID = 1;
@@ -83,7 +82,6 @@ void registerAtomicRightsPlugin(void);
 
 struct Light
 {
-	PLUGINBASE
 	using plugin_owner_tag = Light;
 	static inline constexpr int32 ID = 3;
 	ObjectWithFrame object;
@@ -146,7 +144,6 @@ struct FrustumPlane
 
 struct Camera
 {
-	PLUGINBASE
 	using plugin_owner_tag = Camera;
 	static inline constexpr int32 ID = 4;
 	enum class Projection : int32 { Perspective = 1, Parallel };
@@ -228,7 +225,6 @@ struct Camera
 
 struct Clump
 {
-	PLUGINBASE
 	using plugin_owner_tag = Clump;
 	static inline constexpr int32 ID = 2;
 	Object object;
@@ -279,7 +275,6 @@ struct WorldLights
 // A bit of a stub right now
 struct World
 {
-	PLUGINBASE
 	using plugin_owner_tag = World;
 	static inline constexpr int32 ID = 7;
 	Object object;
