@@ -10,6 +10,7 @@
 #include "rwscene.h"
 #include "rwgeometry.h"
 #include "rwengine.h"
+#include "rw/plugin/object_registry.h"
 
 #define PLUGIN_ID ID_WORLD
 
@@ -22,9 +23,10 @@ PluginList World::s_plglist(sizeof(World));
 World*
 World::create(BBox *bbox)
 {
-	World *world = (World*)rwMalloc(s_plglist.size, MEMDUR_EVENT | ID_WORLD);
+	auto& worldReg = rw::plugin::ObjectRegistry<World>::instance();
+	World *world = (World*)rwMalloc(worldReg.objectSize(), MEMDUR_EVENT | ID_WORLD);
 	if(world == nil){
-		RWERROR((ERR_ALLOC, s_plglist.size));
+		RWERROR((ERR_ALLOC, worldReg.objectSize()));
 		return nil;
 	}
 	numAllocated++;
@@ -32,14 +34,14 @@ World::create(BBox *bbox)
 	world->localLights.init();
 	world->globalLights.init();
 	world->clumps.init();
-	s_plglist.construct(world);
+	worldReg.construct(*world);
 	return world;
 }
 
 void
 World::destroy(void)
 {
-	s_plglist.destruct(this);
+	rw::plugin::ObjectRegistry<World>::instance().destruct(*this);
 	rwFree(this);
 	numAllocated--;
 }

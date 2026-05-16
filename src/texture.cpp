@@ -208,7 +208,7 @@ TexDictionary::streamRead(Stream *stream)
 		(void)rw::plugin::ObjectRegistry<Texture>::instance().streamRead(*stream, *tex);
 		txd->add(tex);
 	}
-	if(s_plglist.streamRead(stream, txd))
+	if(rw::plugin::ObjectRegistry<TexDictionary>::instance().streamRead(*stream, *txd))
 		return txd;
 fail:
 	txd->destroy();
@@ -232,7 +232,7 @@ TexDictionary::streamWrite(Stream *stream)
 		tex->streamWriteNative(stream);
 		(void)texReg.streamWrite(*stream, *tex);
 	}
-	s_plglist.streamWrite(stream, this);
+	(void)rw::plugin::ObjectRegistry<TexDictionary>::instance().streamWrite(*stream, *this);
 }
 
 uint32
@@ -244,7 +244,7 @@ TexDictionary::streamGetSize(void)
 		size += 12 + tex->streamGetSizeNative();
 		size += 12 + static_cast<uint32>(rw::plugin::ObjectRegistry<Texture>::instance().streamGetSize(*tex));
 	}
-	size += 12 + s_plglist.streamGetSize(this);
+	size += 12 + static_cast<uint32>(rw::plugin::ObjectRegistry<TexDictionary>::instance().streamGetSize(*this));
 	return size;
 }
 
@@ -417,14 +417,15 @@ Texture::streamRead(Stream *stream)
 	setMipmapping(mipState);
 	setAutoMipmapping(autoMipState);
 
+	auto& texReg2 = rw::plugin::ObjectRegistry<Texture>::instance();
 	if(tex == nil){
-		s_plglist.streamSkip(stream);
+		texReg2.streamSkip(*stream);
 		return nil;
 	}
 	if(tex->refCount == 1)
 		tex->filterAddressing = filterAddressing&0xFFFF;
 
-	if(s_plglist.streamRead(stream, tex))
+	if(texReg2.streamRead(*stream, *tex))
 		return tex;
 
 	tex->destroy();
@@ -455,7 +456,7 @@ Texture::streamWrite(Stream *stream)
 	writeChunkHeader(stream, ID_STRING, size);
 	stream->write8(buf, size);
 
-	s_plglist.streamWrite(stream, this);
+	(void)rw::plugin::ObjectRegistry<Texture>::instance().streamWrite(*stream, *this);
 	return true;
 }
 
@@ -467,7 +468,7 @@ Texture::streamGetSize(void)
 	size += 12 + 12;
 	size += strlen(this->name.data())+4 & ~3;
 	size += strlen(this->mask.data())+4 & ~3;
-	size += 12 + s_plglist.streamGetSize(this);
+	size += 12 + static_cast<uint32>(rw::plugin::ObjectRegistry<Texture>::instance().streamGetSize(*this));
 	return size;
 }
 
