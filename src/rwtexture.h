@@ -6,6 +6,7 @@
 #include "rwplg.h"
 #include "rwobject.h"
 #include "rwfwd.h"
+#include <array>
 
 namespace rw {
 
@@ -30,8 +31,8 @@ struct Texture
 	Raster *raster;
 	TexDictionary *dict;
 	LLLink inDict;
-	char name[32];
-	char mask[32];
+	std::array<char, 32> name;
+	std::array<char, 32> mask;
 	uint32 filterAddressing; // VVVVUUUU FFFFFFFF
 	int32 refCount;
 

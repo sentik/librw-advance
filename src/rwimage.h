@@ -3,6 +3,7 @@
 #define RW_IMAGE_H
 
 #include "rwbase.h"
+#include <array>
 
 namespace rw {
 
@@ -66,7 +67,7 @@ struct ColorQuant
 		uint32 r, g, b, a;
 		int32 numPixels;
 		Node *parent;
-		Node *children[16];
+		std::array<Node*, 16> children;
 		LLLink link;
 
 		void destroy(void);

@@ -7,6 +7,7 @@
 #include "rwpipeline.h"
 #include "rwobject.h"
 #include "rwfwd.h"
+#include <array>
 
 namespace rw {
 
@@ -114,7 +115,7 @@ struct Geometry
 
 	Triangle *triangles;
 	RGBA *colors;
-	TexCoords *texCoords[8];
+	std::array<TexCoords*, 8> texCoords;
 
 	MorphTarget *morphTargets;
 	MaterialList matList;

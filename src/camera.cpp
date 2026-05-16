@@ -35,8 +35,8 @@ defaultEndUpdateCB(Camera *cam)
 static void
 buildPlanes(Camera *cam)
 {
-	V3d *c = cam->frustumCorners;
-	FrustumPlane *p = cam->frustumPlanes;
+	V3d *c = cam->frustumCorners.data();
+	FrustumPlane *p = cam->frustumPlanes.data();
 	V3d v51 = sub(c[1], c[5]);
 	V3d v73 = sub(c[3], c[7]);
 
@@ -95,7 +95,7 @@ buildClipPersp(Camera *cam)
 	/* First we calculate the 4 points on the view window. */
 	V3d up = scale(ltm->up, cam->viewWindow.y);
 	V3d left = scale(ltm->right, cam->viewWindow.x);
-	V3d *c = cam->frustumCorners;
+	V3d *c = cam->frustumCorners.data();
 	c[0] = add(add(ltm->at, up), left);	// top left
 	c[1] = sub(add(ltm->at, up), left);	// top right
 	c[2] = sub(sub(ltm->at, up), left);	// bottom right
@@ -123,7 +123,7 @@ buildClipParallel(Camera *cam)
 	float32 faroffx = -(1.0f - cam->farPlane)*cam->viewOffset.x;
 	float32 faroffy = (1.0f - cam->farPlane)*cam->viewOffset.y;
 
-	V3d *c = cam->frustumCorners;
+	V3d *c = cam->frustumCorners.data();
 	c[0].x = nearoffx + cam->viewWindow.x;
 	c[0].y = nearoffy + cam->viewWindow.y;
 	c[0].z = cam->nearPlane;
@@ -252,7 +252,7 @@ cameraSync(ObjectWithFrame *obj)
 		Matrix::mult(&cam->viewMatrix, &inv, &proj);
 		buildClipParallel(cam);
 	}
-	cam->frustumBoundBox.calculate(cam->frustumCorners, 8);
+	cam->frustumBoundBox.calculate(cam->frustumCorners.data(), 8);
 }
 
 void
@@ -428,7 +428,7 @@ Camera::FrustumResult
 Camera::frustumTestSphere(const Sphere *s) const
 {
 	FrustumResult res = FrustumResult::Inside;
-	const FrustumPlane *p = this->frustumPlanes;
+	const FrustumPlane *p = this->frustumPlanes.data();
 	for(int32 i = 0; i < 6; i++){
 		float32 dist = dot(p->plane.normal, s->center) - p->plane.distance;
 		if(s->radius < dist)

@@ -1,4 +1,4 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -2030,12 +2030,12 @@ readNativeTexture(Stream *stream)
 		RWERROR((ERR_CHUNK, "STRING"));
 		goto fail;
 	}
-	stream->read8(tex->name, length);
+	stream->read8(tex->name.data(), length);
 	if(!findChunk(stream, ID_STRING, &length, nil)){
 		RWERROR((ERR_CHUNK, "STRING"));
 		goto fail;
 	}
-	stream->read8(tex->mask, length);
+	stream->read8(tex->mask.data(), length);
 
 	// Raster
 	StreamRasterExt streamExt;
@@ -2184,12 +2184,12 @@ writeNativeTexture(Texture *tex, Stream *stream)
 	writeChunkHeader(stream, ID_STRUCT, 8);
 	stream->writeU32(FOURCC_PS2);
 	stream->writeU32(tex->filterAddressing);
-	int32 len = strlen(tex->name)+4 & ~3;
+	int32 len = strlen(tex->name.data())+4 & ~3;
 	writeChunkHeader(stream, ID_STRING, len);
-	stream->write8(tex->name, len);
-	len = strlen(tex->mask)+4 & ~3;
+	stream->write8(tex->name.data(), len);
+	len = strlen(tex->mask.data())+4 & ~3;
 	writeChunkHeader(stream, ID_STRING, len);
-	stream->write8(tex->mask, len);
+	stream->write8(tex->mask.data(), len);
 
 	int32 sz = ras->pixelSize + ras->paletteSize;
 	writeChunkHeader(stream, ID_STRUCT, 12 + 64 + 12 + sz);
@@ -2229,8 +2229,8 @@ uint32
 getSizeNativeTexture(Texture *tex)
 {
 	uint32 size = 12 + 8;
-	size += 12 + strlen(tex->name)+4 & ~3;
-	size += 12 + strlen(tex->mask)+4 & ~3;
+	size += 12 + strlen(tex->name.data())+4 & ~3;
+	size += 12 + strlen(tex->mask.data())+4 & ~3;
 	size += 12;
 	size += 12 + 64;
 	Ps2Raster *ras = GETPS2RASTEREXT(tex->raster);

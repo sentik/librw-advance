@@ -8,6 +8,7 @@
 #include "rwobject.h"
 #include "rwframe.h"
 #include "rwfwd.h"
+#include <array>
 
 namespace rw {
 
@@ -155,8 +156,8 @@ struct Camera
 	Matrix viewMatrix;
 	float32 zScale, zShift;
 
-	FrustumPlane frustumPlanes[6];
-	V3d frustumCorners[8];
+	std::array<FrustumPlane, 6> frustumPlanes;
+	std::array<V3d, 8> frustumCorners;
 	BBox frustumBoundBox;
 
 	Raster *frameBuffer;

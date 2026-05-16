@@ -1,4 +1,4 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -898,10 +898,10 @@ readNativeTexture(Stream *stream)
 
 	// Texture
 	tex->filterAddressing = stream->readU32();
-	stream->read8(tex->name, 32);
-	stream->read8(tex->mask, 32);
+	stream->read8(tex->name.data(), 32);
+	stream->read8(tex->mask.data(), 32);
 
-//if(strcmp(tex->name, "bluallu") == 0)
+//if(strcmp(tex->name.data(), "bluallu") == 0)
 //__debugbreak();
 
 	// Raster
@@ -956,8 +956,8 @@ writeNativeTexture(Texture *tex, Stream *stream)
 
 	// Texture
 	stream->writeU32(tex->filterAddressing);
-	stream->write8(tex->name, 32);
-	stream->write8(tex->mask, 32);
+	stream->write8(tex->name.data(), 32);
+	stream->write8(tex->mask.data(), 32);
 
 	// Raster
 	Raster *raster = tex->raster;
