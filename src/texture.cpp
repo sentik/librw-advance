@@ -115,16 +115,17 @@ bool32 Texture::getAutoMipmapping(void) { return TEXTUREGLOBAL(autoMipmapping); 
 TexDictionary*
 TexDictionary::create(void)
 {
-	TexDictionary *dict = (TexDictionary*)rwMalloc(s_plglist.size, MEMDUR_EVENT | ID_TEXDICTIONARY);
+	auto& tdReg = rw::plugin::ObjectRegistry<TexDictionary>::instance();
+	TexDictionary *dict = (TexDictionary*)rwMalloc(tdReg.objectSize(), MEMDUR_EVENT | ID_TEXDICTIONARY);
 	if(dict == nil){
-		RWERROR((ERR_ALLOC, s_plglist.size));
+		RWERROR((ERR_ALLOC, tdReg.objectSize()));
 		return nil;
 	}
 	numAllocated++;
 	dict->object.init(TexDictionary::ID, 0);
 	dict->textures.init();
 	TEXTUREGLOBAL(texDicts).add(&dict->inGlobalList);
-	s_plglist.construct(dict);
+	tdReg.construct(*dict);
 	return dict;
 }
 
@@ -138,7 +139,7 @@ TexDictionary::destroy(void)
 		this->remove(tex);
 		tex->destroy();
 	}
-	s_plglist.destruct(this);
+	rw::plugin::ObjectRegistry<TexDictionary>::instance().destruct(*this);
 	this->inGlobalList.remove();
 	rwFree(this);
 	numAllocated--;

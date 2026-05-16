@@ -29,9 +29,10 @@ PluginList Atomic::s_plglist(sizeof(Atomic));
 Clump*
 Clump::create(void)
 {
-	Clump *clump = (Clump*)rwMalloc(s_plglist.size, MEMDUR_EVENT | ID_CLUMP);
+	auto& clumpReg = rw::plugin::ObjectRegistry<Clump>::instance();
+	Clump *clump = (Clump*)rwMalloc(clumpReg.objectSize(), MEMDUR_EVENT | ID_CLUMP);
 	if(clump == nil){
-		RWERROR((ERR_ALLOC, s_plglist.size));
+		RWERROR((ERR_ALLOC, clumpReg.objectSize()));
 		return nil;
 	}
 	numAllocated++;
@@ -44,7 +45,7 @@ Clump::create(void)
 	clump->world = nil;
 	clump->inWorld.init();
 
-	s_plglist.construct(clump);
+	clumpReg.construct(*clump);
 	return clump;
 }
 
@@ -66,7 +67,7 @@ Clump::clone(void)
 	if(this->world)
 		this->world->addClump(clump);
 
-	s_plglist.copy(clump, this);
+	rw::plugin::ObjectRegistry<Clump>::instance().copyAll(*clump, *this);
 	return clump;
 }
 
@@ -74,7 +75,7 @@ void
 Clump::destroy(void)
 {
 	Frame *f;
-	s_plglist.destruct(this);
+	rw::plugin::ObjectRegistry<Clump>::instance().destruct(*this);
 	FORLIST(lnk, this->atomics){
 		Atomic *a = Atomic::fromClump(lnk);
 		this->removeAtomic(a);
@@ -272,7 +273,7 @@ Clump::streamRead(Stream *stream)
 			geometryList[i]->destroy();
 	rwFree(geometryList);
 	rwFree(frmlst.frames);
-	if(s_plglist.streamRead(stream, clump))
+	if(rw::plugin::ObjectRegistry<Clump>::instance().streamRead(*stream, *clump))
 		return clump;
 
 failgeo:
@@ -341,7 +342,7 @@ Clump::streamWrite(Stream *stream)
 
 	rwFree(frmlst.frames);
 
-	s_plglist.streamWrite(stream, this);
+	(void)rw::plugin::ObjectRegistry<Clump>::instance().streamWrite(*stream, *this);
 	return true;
 }
 
@@ -376,7 +377,7 @@ Clump::streamGetSize(void)
 	FORLIST(lnk, this->cameras)
 		size += 16 + 12 + Camera::fromClump(lnk)->streamGetSize();
 
-	size += 12 + s_plglist.streamGetSize(this);
+	size += 12 + static_cast<uint32>(rw::plugin::ObjectRegistry<Clump>::instance().streamGetSize(*this));
 	return size;
 }
 
