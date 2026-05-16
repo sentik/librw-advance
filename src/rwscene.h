@@ -83,6 +83,7 @@ void registerAtomicRightsPlugin(void);
 struct Light
 {
 	PLUGINBASE
+	using plugin_owner_tag = Light;
 	static inline constexpr int32 ID = 3;
 	ObjectWithFrame object;
 	float32 radius;
@@ -145,6 +146,7 @@ struct FrustumPlane
 struct Camera
 {
 	PLUGINBASE
+	using plugin_owner_tag = Camera;
 	static inline constexpr int32 ID = 4;
 	enum class Projection : int32 { Perspective = 1, Parallel };
 	enum : uint32 { CLEARIMAGE = 0x1, CLEARZ = 0x2, CLEARSTENCIL = 0x4 };

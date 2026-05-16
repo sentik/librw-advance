@@ -13,6 +13,7 @@ namespace rw {
 struct Frame
 {
 	PLUGINBASE
+	using plugin_owner_tag = Frame;
 	using Callback = Frame*(*)(Frame *f, void *data);
 	static inline constexpr int32 ID = 0;
 	enum {		// private flags

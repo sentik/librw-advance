@@ -8,6 +8,7 @@
 #include "rwpipeline.h"
 #include "rwscene.h"
 #include "rwengine.h"
+#include "rw/plugin/object_registry.h"
 
 #define PLUGIN_ID ID_LIGHT
 
@@ -32,9 +33,11 @@ worldLightSync(ObjectWithFrame *obj)
 Light*
 Light::create(int32 type)
 {
-	Light *light = (Light*)rwMalloc(s_plglist.size, MEMDUR_EVENT | ID_LIGHT);
+	auto& reg = rw::plugin::ObjectRegistry<Light>::instance();
+	auto sz = reg.objectSize();
+	Light *light = (Light*)rwMalloc(sz, MEMDUR_EVENT | ID_LIGHT);
 	if(light == nil){
-		RWERROR((ERR_ALLOC, s_plglist.size));
+		RWERROR((ERR_ALLOC, sz));
 		return nil;
 	}
 	numAllocated++;
@@ -59,14 +62,14 @@ Light::create(int32 type)
 	light->originalSync = light->object.syncCB;
 	light->object.syncCB = worldLightSync;
 
-	s_plglist.construct(light);
+	reg.construct(*light);
 	return light;
 }
 
 void
 Light::destroy(void)
 {
-	s_plglist.destruct(this);
+	rw::plugin::ObjectRegistry<Light>::instance().destruct(*this);
 	assert(this->clump == nil);
 	assert(this->world == nil);
 	this->setFrame(nil);
@@ -126,7 +129,7 @@ Light::streamRead(Stream *stream)
 		// tan -> -cos
 		light->minusCosAngle = -1.0f/sqrtf(a*a+1.0f);
 	light->object.object.flags = (uint8)buf.type_flags;
-	if(s_plglist.streamRead(stream, light))
+	if(rw::plugin::ObjectRegistry<Light>::instance().streamRead(*stream, *light))
 		return light;
 	light->destroy();
 	return nil;
@@ -150,14 +153,16 @@ Light::streamWrite(Stream *stream)
 		(uint32)this->object.object.subType << 16;
 	stream->write32(&buf, sizeof(LightChunkData));
 
-	s_plglist.streamWrite(stream, this);
+	auto& reg = rw::plugin::ObjectRegistry<Light>::instance();
+	(void)reg.streamWrite(*stream, *this);
 	return true;
 }
 
 uint32
 Light::streamGetSize(void)
 {
-	return 12 + sizeof(LightChunkData) + 12 + s_plglist.streamGetSize(this);
+	return 12 + sizeof(LightChunkData) + 12 +
+	       static_cast<uint32>(rw::plugin::ObjectRegistry<Light>::instance().streamGetSize(*this));
 }
 
 }

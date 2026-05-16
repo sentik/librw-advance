@@ -9,6 +9,7 @@
 #include "rwscene.h"
 #include "rwraster.h"
 #include "rwengine.h"
+#include "rw/plugin/object_registry.h"
 
 #define PLUGIN_ID ID_CAMERA
 
@@ -278,9 +279,11 @@ worldCameraSync(ObjectWithFrame *obj)
 Camera*
 Camera::create(void)
 {
-	Camera *cam = (Camera*)rwMalloc(s_plglist.size, MEMDUR_EVENT | ID_CAMERA);
+	auto& reg = rw::plugin::ObjectRegistry<Camera>::instance();
+	auto sz = reg.objectSize();
+	Camera *cam = (Camera*)rwMalloc(sz, MEMDUR_EVENT | ID_CAMERA);
 	if(cam == nil){
-		RWERROR((ERR_ALLOC, s_plglist.size));
+		RWERROR((ERR_ALLOC, sz));
 		return nil;
 	}
 	numAllocated++;
@@ -311,7 +314,7 @@ Camera::create(void)
 	cam->beginUpdateCB = worldBeginUpdateCB;
 	cam->endUpdateCB = worldEndUpdateCB;
 
-	s_plglist.construct(cam);
+	reg.construct(*cam);
 	return cam;
 }
 
@@ -336,14 +339,14 @@ Camera::clone(void)
 	if(this->world)
 		this->world->addCamera(cam);
 
-	s_plglist.copy(cam, this);
+	rw::plugin::ObjectRegistry<Camera>::instance().copyAll(*cam, *this);
 	return cam;
 }
 
 void
 Camera::destroy(void)
 {
-	s_plglist.destruct(this);
+	rw::plugin::ObjectRegistry<Camera>::instance().destruct(*this);
 	assert(this->clump == nil);
 	assert(this->world == nil);
 	this->setFrame(nil);
@@ -465,7 +468,7 @@ Camera::streamRead(Stream *stream)
 	cam->farPlane = buf.farPlane;
 	cam->fogPlane = buf.fogPlane;
 	cam->projection = static_cast<Projection>(buf.projection);
-	if(s_plglist.streamRead(stream, cam))
+	if(rw::plugin::ObjectRegistry<Camera>::instance().streamRead(*stream, *cam))
 		return cam;
 	cam->destroy();
 	return nil;
@@ -484,7 +487,7 @@ Camera::streamWrite(Stream *stream)
 	buf.fogPlane = this->fogPlane;
 	buf.projection = static_cast<int32>(this->projection);
 	stream->write32(&buf, sizeof(CameraChunkData));
-	s_plglist.streamWrite(stream, this);
+	(void)rw::plugin::ObjectRegistry<Camera>::instance().streamWrite(*stream, *this);
 	return true;
 }
 
@@ -492,7 +495,7 @@ uint32
 Camera::streamGetSize(void)
 {
 	return 12 + sizeof(CameraChunkData) + 12 +
-	       s_plglist.streamGetSize(this);
+	       static_cast<uint32>(rw::plugin::ObjectRegistry<Camera>::instance().streamGetSize(*this));
 }
 
 // Assumes horizontal FOV for 4:3, but we convert to vertical FOV
