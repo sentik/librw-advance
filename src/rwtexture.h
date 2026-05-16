@@ -29,6 +29,11 @@ struct Texture
 	};
 
 	PLUGINBASE
+	// Marker for the new typed plugin layer (rw::plugin::PluginOwner concept).
+	// Coexists with PLUGINBASE; legacy system is still authoritative until the
+	// owner-wide migration completes (see plan Phase 4).
+	using plugin_owner_tag = Texture;
+
 	Raster *raster;
 	TexDictionary *dict;
 	LLLink inDict;

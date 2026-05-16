@@ -59,6 +59,7 @@ add_library(librw
     rw/plugin/offset.h
     rw/plugin/plugin_list_core.cpp
     rw/plugin/plugin_list_core.h
+    rw/plugin/smoke_compile_check.cpp
     rw/plugin/types.h
 
     d3d/d3d8.cpp
