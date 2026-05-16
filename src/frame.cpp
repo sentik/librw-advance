@@ -8,6 +8,7 @@
 #include "rwpipeline.h"
 #include "rwframe.h"
 #include "rwengine.h"
+#include "rw/plugin/object_registry.h"
 
 #define PLUGIN_ID ID_FRAMELIST
 
@@ -28,9 +29,11 @@ Frame::registerModule(void)
 Frame*
 Frame::create(void)
 {
-	Frame *f = (Frame*)rwMalloc(s_plglist.size, MEMDUR_EVENT | ID_FRAMELIST);
+	auto& reg = rw::plugin::ObjectRegistry<Frame>::instance();
+	auto sz = reg.objectSize();
+	Frame *f = (Frame*)rwMalloc(sz, MEMDUR_EVENT | ID_FRAMELIST);
 	if(f == nil){
-		RWERROR((ERR_ALLOC, s_plglist.size));
+		RWERROR((ERR_ALLOC, sz));
 		return nil;
 	}
 	numAllocated++;
@@ -41,7 +44,7 @@ Frame::create(void)
 	f->root = f;
 	f->matrix.setIdentity();
 	f->ltm.setIdentity();
-	s_plglist.construct(f);
+	reg.construct(*f);
 	return f;
 }
 
@@ -57,7 +60,7 @@ Frame::destroy(void)
 {
 	FORLIST(lnk, this->objectList)
 		ObjectWithFrame::fromFrame(lnk)->setFrame(nil);
-	s_plglist.destruct(this);
+	rw::plugin::ObjectRegistry<Frame>::instance().destruct(*this);
 	if(this->getParent())
 		this->removeChild();
 	if(this->object.privateFlags & Frame::HIERARCHYSYNC)
@@ -77,7 +80,7 @@ Frame::destroyHierarchy(void)
 		child->destroyHierarchy();
 	}
 	assert(this->objectList.isEmpty());
-	s_plglist.destruct(this);
+	rw::plugin::ObjectRegistry<Frame>::instance().destruct(*this);
 	if(this->object.privateFlags & Frame::HIERARCHYSYNC)
 		this->inDirtyList.remove();
 	rwFree(this);
@@ -338,7 +341,7 @@ cloneRecurse(Frame *old, Frame *newroot)
 		frame->child = clonedchild;
 		clonedchild->object.parent = frame;
 	}
-	Frame::s_plglist.copy(frame, old);
+	rw::plugin::ObjectRegistry<Frame>::instance().copyAll(*frame, *old);
 	return frame;
 }
 
@@ -406,7 +409,7 @@ FrameList_::streamRead(Stream *stream)
 			this->frames[buf.parent]->addChild(f, rw::streamAppendFrames);
 	}
 	for(int32 i = 0; i < this->numFrames; i++)
-		Frame::s_plglist.streamRead(stream, this->frames[i]);
+		(void)rw::plugin::ObjectRegistry<Frame>::instance().streamRead(*stream, *this->frames[i]);
 	return this;
 }
 
@@ -419,7 +422,7 @@ FrameList_::streamWrite(Stream *stream)
 	structsize = 4 + this->numFrames*sizeof(FrameStreamData);
 	size += 12 + structsize;
 	for(int32 i = 0; i < this->numFrames; i++)
-		size += 12 + Frame::s_plglist.streamGetSize(this->frames[i]);
+		size += 12 + rw::plugin::ObjectRegistry<Frame>::instance().streamGetSize(*this->frames[i]);
 
 	writeChunkHeader(stream, ID_FRAMELIST, size);
 	writeChunkHeader(stream, ID_STRUCT, structsize);
@@ -436,13 +439,13 @@ FrameList_::streamWrite(Stream *stream)
 		stream->write32(&buf, sizeof(buf));
 	}
 	for(int32 i = 0; i < this->numFrames; i++)
-		Frame::s_plglist.streamWrite(stream, this->frames[i]);
+		(void)rw::plugin::ObjectRegistry<Frame>::instance().streamWrite(*stream, *this->frames[i]);
 }
 
 static Frame*
 sizeCB(Frame *f, void *size)
 {
-	*(int32*)size += Frame::s_plglist.streamGetSize(f);
+	*(int32*)size += rw::plugin::ObjectRegistry<Frame>::instance().streamGetSize(*f);
 	f->forAllChildren(sizeCB, size);
 	return f;
 }

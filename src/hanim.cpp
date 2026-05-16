@@ -15,6 +15,7 @@
 #include "rwengine.h"
 #include "rwanim.h"
 #include "rwplugins.h"
+#include "rw/plugin/object_registry.h"
 #include "ps2/rwps2.h"
 #include "ps2/rwps2plg.h"
 #include "d3d/rwxbox.h"
@@ -406,13 +407,46 @@ void
 registerHAnimPlugin(void)
 {
 	Engine::registerPlugin(0, ID_HANIM, hanimOpen, hanimClose);
-	hAnimOffset = Frame::registerPlugin(sizeof(HAnimData), ID_HANIM,
-	                                    createHAnim,
-	                                    destroyHAnim, copyHAnim);
-	Frame::registerPluginStream(ID_HANIM,
-	                            readHAnim,
-	                            writeHAnim,
-	                            getSizeHAnim);
+
+	using namespace rw::plugin;
+	auto& reg = ObjectRegistry<Frame>::instance();
+
+	PluginLifecycle lc{
+		.construct = [](void* o, std::ptrdiff_t off) {
+			createHAnim(o, static_cast<int32>(off), 0);
+		},
+		.destruct = [](void* o, std::ptrdiff_t off) {
+			destroyHAnim(o, static_cast<int32>(off), 0);
+		},
+		.copy = [](void* d, const void* s, std::ptrdiff_t off) {
+			copyHAnim(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+		},
+	};
+
+	PluginStream st{
+		.read = [](Stream& s, std::int32_t len, void* o, std::ptrdiff_t off)
+		        -> std::expected<void, StreamPluginError> {
+			auto* r = readHAnim(&s, len, o, static_cast<int32>(off), 0);
+			return r ? std::expected<void, StreamPluginError>{} :
+			           std::unexpected(StreamPluginError::ioFailure);
+		},
+		.write = [](Stream& s, std::int32_t len, const void* o, std::ptrdiff_t off)
+		         -> std::expected<void, StreamPluginError> {
+			auto* r = writeHAnim(&s, len,
+			    const_cast<void*>(o), static_cast<int32>(off), 0);
+			return r ? std::expected<void, StreamPluginError>{} :
+			           std::unexpected(StreamPluginError::ioFailure);
+		},
+		.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
+			return getSizeHAnim(const_cast<void*>(o),
+			    static_cast<int32>(off), 0);
+		},
+	};
+
+	auto result = reg.registerExtension<HAnimData>(
+	    fromRaw(ID_HANIM), std::move(lc), std::move(st), "hanim");
+	if(result)
+		hAnimOffset = static_cast<int32>(result->value());
 }
 
 }
