@@ -86,8 +86,15 @@ registerPDSPlugin(int32 n)
 		    "pds-atomic");
 	}
 
-	Material::registerPlugin(0, ID_PDS, nil, nil, nil);
-	Material::setStreamRightsCallback(ID_PDS, materialPDSRights);
+	{
+		using namespace rw::plugin;
+		(void)ObjectRegistry<Material>::instance().registerRightsPlugin(
+		    fromRaw(ID_PDS),
+		    [](void* o, std::ptrdiff_t, std::uint32_t data) {
+		        materialPDSRights(o, 0, 0, data);
+		    },
+		    "pds-material");
+	}
 }
 
 void

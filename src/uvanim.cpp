@@ -13,6 +13,7 @@
 #include "rwengine.h"
 #include "rwanim.h"
 #include "rwplugins.h"
+#include "rw/plugin/object_registry.h"
 
 #define PLUGIN_ID ID_UVANIMATION
 
@@ -444,10 +445,42 @@ void
 registerUVAnimPlugin(void)
 {
 	Engine::registerPlugin(0, ID_UVANIMATION, uvanimOpen, uvanimClose);
-	uvAnimOffset = Material::registerPlugin(sizeof(UVAnim), ID_UVANIMATION,
-		createUVAnim, destroyUVAnim, copyUVAnim);
-	Material::registerPluginStream(ID_UVANIMATION,
-		readUVAnim, writeUVAnim, getSizeUVAnim);
+	{
+		using namespace rw::plugin;
+		auto& reg = ObjectRegistry<Material>::instance();
+		auto result = reg.registerExtension<UVAnim>(fromRaw(ID_UVANIMATION),
+		    PluginLifecycle{
+		        .construct = [](void* o, std::ptrdiff_t off) {
+		            createUVAnim(o, static_cast<int32>(off), 0);
+		        },
+		        .destruct = [](void* o, std::ptrdiff_t off) {
+		            destroyUVAnim(o, static_cast<int32>(off), 0);
+		        },
+		        .copy = [](void* d, const void* s, std::ptrdiff_t off) {
+		            copyUVAnim(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+		        },
+		    },
+		    PluginStream{
+		        .read = [](rw::Stream& stream, std::int32_t len, void* o, std::ptrdiff_t off)
+		            -> std::expected<void, StreamPluginError> {
+		            if(readUVAnim(&stream, static_cast<int32>(len), o, static_cast<int32>(off), 0))
+		                return {};
+		            return std::unexpected(StreamPluginError::callbackFailed);
+		        },
+		        .write = [](rw::Stream& stream, std::int32_t len, const void* o, std::ptrdiff_t off)
+		            -> std::expected<void, StreamPluginError> {
+		            writeUVAnim(&stream, static_cast<int32>(len),
+		                        const_cast<void*>(o), static_cast<int32>(off), 0);
+		            return {};
+		        },
+		        .getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
+		            return getSizeUVAnim(const_cast<void*>(o), static_cast<int32>(off), 0);
+		        },
+		    },
+		    "uvanim-material");
+		if(result)
+			uvAnimOffset = static_cast<int32>(result->value());
+	}
 }
 
 bool32 

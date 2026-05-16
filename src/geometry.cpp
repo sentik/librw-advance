@@ -11,6 +11,7 @@
 #include "rwgeometry.h"
 #include "rwtexture.h"
 #include "rwengine.h"
+#include "rw/plugin/object_registry.h"
 
 #define PLUGIN_ID ID_GEOMETRY
 
@@ -798,7 +799,7 @@ MaterialList::streamRead(Stream *stream, MaterialList *matlist)
 			if(m == nil)
 				goto fail;
 		}
-		matlist->appendMaterial(m);
+		(void)matlist->appendMaterial(m);
 		m->destroy();
 	}
 	rwFree(indices);
@@ -858,9 +859,11 @@ MaterialList::streamGetSize(void)
 Material*
 Material::create(void)
 {
-	Material *mat = (Material*)rwMalloc(s_plglist.size, MEMDUR_EVENT | ID_MATERIAL);
+	auto& reg = rw::plugin::ObjectRegistry<Material>::instance();
+	auto sz = reg.objectSize();
+	Material *mat = (Material*)rwMalloc(sz, MEMDUR_EVENT | ID_MATERIAL);
 	if(mat == nil){
-		RWERROR((ERR_ALLOC, s_plglist.size));
+		RWERROR((ERR_ALLOC, sz));
 		return nil;
 	}
 	numAllocated++;
@@ -869,7 +872,7 @@ Material::create(void)
 	mat->surfaceProps = defaultSurfaceProps;
 	mat->pipeline = nil;
 	mat->refCount = 1;
-	s_plglist.construct(mat);
+	reg.construct(*mat);
 	return mat;
 }
 
@@ -877,16 +880,14 @@ Material*
 Material::clone(void)
 {
 	Material *mat = Material::create();
-	if(mat == nil){
-		RWERROR((ERR_ALLOC, s_plglist.size));
+	if(mat == nil)
 		return nil;
-	}
 	mat->color = this->color;
 	mat->surfaceProps = this->surfaceProps;
 	if(this->texture)
 		mat->setTexture(this->texture);
 	mat->pipeline = this->pipeline;
-	s_plglist.copy(mat, this);
+	rw::plugin::ObjectRegistry<Material>::instance().copyAll(*mat, *this);
 	return mat;
 }
 
@@ -895,7 +896,7 @@ Material::destroy(void)
 {
 	this->refCount--;
 	if(this->refCount <= 0){
-		s_plglist.destruct(this);
+		rw::plugin::ObjectRegistry<Material>::instance().destruct(*this);
 		if(this->texture)
 			this->texture->destroy();
 		rwFree(this);
@@ -954,10 +955,11 @@ Material::streamRead(Stream *stream)
 	}
 
 	materialRights[0] = 0;
-	if(!s_plglist.streamRead(stream, mat))
+	if(!rw::plugin::ObjectRegistry<Material>::instance().streamRead(*stream, *mat))
 		goto fail;
 	if(materialRights[0])
-		s_plglist.assertRights(mat, materialRights[0], materialRights[1]);
+		rw::plugin::ObjectRegistry<Material>::instance().assertRights(
+		    *mat, rw::plugin::fromRaw(materialRights[0]), materialRights[1]);
 	return mat;
 
 fail:
@@ -993,7 +995,7 @@ Material::streamWrite(Stream *stream)
 	if(this->texture)
 		this->texture->streamWrite(stream);
 
-	s_plglist.streamWrite(stream, this);
+	(void)rw::plugin::ObjectRegistry<Material>::instance().streamWrite(*stream, *this);
 	return true;
 }
 
@@ -1006,48 +1008,40 @@ Material::streamGetSize(void)
 		size += 12;
 	if(this->texture)
 		size += 12 + this->texture->streamGetSize();
-	size += 12 + s_plglist.streamGetSize(this);
+	size += 12 + static_cast<uint32>(
+	    rw::plugin::ObjectRegistry<Material>::instance().streamGetSize(*this));
 	return size;
-}
-
-// Material Rights plugin
-
-static Stream*
-readMaterialRights(Stream *stream, int32, void *, int32, int32)
-{
-	stream->read32(materialRights, 8);
-//	printf("materialrights: %X %X\n", materialRights[0], materialRights[1]);
-	return stream;
-}
-
-static Stream*
-writeMaterialRights(Stream *stream, int32, void *object, int32, int32)
-{
-	Material *material = (Material*)object;
-	uint32 buffer[2];
-	buffer[0] = material->pipeline->pluginID;
-	buffer[1] = material->pipeline->pluginData;
-	stream->write32(buffer, 8);
-	return stream;
-}
-
-static int32
-getSizeMaterialRights(void *object, int32, int32)
-{
-	Material *material = (Material*)object;
-	if(material->pipeline == nil || material->pipeline->pluginID == 0)
-		return 0;
-	return 8;
 }
 
 void
 registerMaterialRightsPlugin(void)
 {
-	Material::registerPlugin(0, ID_RIGHTTORENDER, nil, nil, nil);
-	Material::registerPluginStream(ID_RIGHTTORENDER,
-	                               readMaterialRights,
-	                               writeMaterialRights,
-	                               getSizeMaterialRights);
+	using namespace rw::plugin;
+	auto& reg = ObjectRegistry<Material>::instance();
+	(void)reg.registerStreamPlugin(fromRaw(ID_RIGHTTORENDER),
+	    PluginStream{
+	        .read = [](rw::Stream& stream, std::int32_t, void*, std::ptrdiff_t)
+	            -> std::expected<void, StreamPluginError> {
+	            stream.read32(materialRights, 8);
+	            return {};
+	        },
+	        .write = [](rw::Stream& stream, std::int32_t, const void* object, std::ptrdiff_t)
+	            -> std::expected<void, StreamPluginError> {
+	            const Material* material = static_cast<const Material*>(object);
+	            uint32 buffer[2];
+	            buffer[0] = material->pipeline->pluginID;
+	            buffer[1] = material->pipeline->pluginData;
+	            stream.write32(buffer, 8);
+	            return {};
+	        },
+	        .getSize = [](const void* object, std::ptrdiff_t) -> std::int32_t {
+	            const Material* material = static_cast<const Material*>(object);
+	            if(material->pipeline == nil || material->pipeline->pluginID == 0)
+	                return 0;
+	            return 8;
+	        },
+	    },
+	    "material-rights");
 }
 
 

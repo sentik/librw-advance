@@ -656,14 +656,41 @@ registerMatFXPlugin(void)
 			matFXGlobals.atomicOffset = static_cast<int32>(result->value());
 	}
 
-	matFXGlobals.materialOffset =
-	Material::registerPlugin(sizeof(MatFX*), ID_MATFX,
-	                         createMaterialMatFX, destroyMaterialMatFX,
-	                         copyMaterialMatFX);
-	Material::registerPluginStream(ID_MATFX,
-	                               readMaterialMatFX,
-	                               writeMaterialMatFX,
-	                               getSizeMaterialMatFX);
+	{
+		using namespace rw::plugin;
+		auto& reg = ObjectRegistry<Material>::instance();
+		auto result = reg.registerExtension<MatFX*>(fromRaw(ID_MATFX),
+		    PluginLifecycle{
+		        .construct = [](void* o, std::ptrdiff_t off) {
+		            createMaterialMatFX(o, static_cast<int32>(off), 0);
+		        },
+		        .destruct = [](void* o, std::ptrdiff_t off) {
+		            destroyMaterialMatFX(o, static_cast<int32>(off), 0);
+		        },
+		        .copy = [](void* d, const void* s, std::ptrdiff_t off) {
+		            copyMaterialMatFX(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+		        },
+		    },
+		    PluginStream{
+		        .read = [](rw::Stream& stream, std::int32_t len, void* o, std::ptrdiff_t off)
+		            -> std::expected<void, StreamPluginError> {
+		            readMaterialMatFX(&stream, static_cast<int32>(len), o, static_cast<int32>(off), 0);
+		            return {};
+		        },
+		        .write = [](rw::Stream& stream, std::int32_t len, const void* o, std::ptrdiff_t off)
+		            -> std::expected<void, StreamPluginError> {
+		            writeMaterialMatFX(&stream, static_cast<int32>(len),
+		                               const_cast<void*>(o), static_cast<int32>(off), 0);
+		            return {};
+		        },
+		        .getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
+		            return getSizeMaterialMatFX(const_cast<void*>(o), static_cast<int32>(off), 0);
+		        },
+		    },
+		    "matfx-material");
+		if(result)
+			matFXGlobals.materialOffset = static_cast<int32>(result->value());
+	}
 }
 
 }
