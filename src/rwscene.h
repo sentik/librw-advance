@@ -9,6 +9,8 @@
 #include "rwframe.h"
 #include "rwfwd.h"
 #include <array>
+#include <functional>
+#include <type_traits>
 
 namespace rw {
 
@@ -58,10 +60,14 @@ struct Atomic
 	void uninstance(void);
 	void render(void) { this->renderCB(this); }
 	void setRenderCB(RenderCB renderCB){
-		this->renderCB = renderCB;
-		if(this->renderCB == nullptr)
-			this->renderCB = defaultRenderCB;
-	};
+		this->renderCB = renderCB ? renderCB : defaultRenderCB;
+	}
+	void setRenderCB(std::function<void(Atomic*)> fn){
+		if(auto *ptr = fn.template target<RenderCB>())
+			setRenderCB(*ptr);
+		else
+			setRenderCB(fn ? defaultRenderCB : nullptr);
+	}
 	void setFlags(uint32 flags) noexcept { this->object.object.flags = flags; }
 	[[nodiscard]] uint32 getFlags(void) const noexcept { return this->object.object.flags; }
 	[[nodiscard]] static Atomic *streamReadClump(Stream *stream,
@@ -190,6 +196,17 @@ struct Camera
 		return LLLinkGetData(lnk, Camera, inClump); }
 	void beginUpdate(void) { this->beginUpdateCB(this); }
 	void endUpdate(void) { this->endUpdateCB(this); }
+
+	using UpdateCB = void(*)(Camera*);
+	void setBeginUpdateCB(UpdateCB cb) noexcept { this->beginUpdateCB = cb; }
+	void setEndUpdateCB(UpdateCB cb) noexcept   { this->endUpdateCB   = cb; }
+	void setBeginUpdateCB(std::function<void(Camera*)> fn){
+		if(auto *ptr = fn.template target<UpdateCB>()) setBeginUpdateCB(*ptr);
+	}
+	void setEndUpdateCB(std::function<void(Camera*)> fn){
+		if(auto *ptr = fn.template target<UpdateCB>()) setEndUpdateCB(*ptr);
+	}
+
 	void clear(RGBA *col, uint32 mode);
 	void showRaster(uint32 flags);
 	void setNearPlane(float32);
@@ -281,6 +298,12 @@ struct World
 	void enumerateLights(Atomic *atomic, WorldLights *lightData);
 	void enumerateLights(WorldLights *lightData);
 };
+
+static_assert(std::is_standard_layout_v<Atomic>,  "Atomic must be standard-layout for plugin offsets");
+static_assert(std::is_standard_layout_v<Light>,   "Light must be standard-layout for plugin offsets");
+static_assert(std::is_standard_layout_v<Camera>,  "Camera must be standard-layout for plugin offsets");
+static_assert(std::is_standard_layout_v<Clump>,   "Clump must be standard-layout for plugin offsets");
+static_assert(std::is_standard_layout_v<World>,   "World must be standard-layout for plugin offsets");
 
 }
 

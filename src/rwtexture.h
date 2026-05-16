@@ -7,6 +7,7 @@
 #include "rwobject.h"
 #include "rwfwd.h"
 #include <array>
+#include <type_traits>
 
 namespace rw {
 
@@ -107,6 +108,9 @@ struct TexDictionary
 	static void setCurrent(TexDictionary *txd);
 	[[nodiscard]] static TexDictionary *getCurrent(void);
 };
+
+static_assert(std::is_standard_layout_v<Texture>,       "Texture must be standard-layout for plugin offsets");
+static_assert(std::is_standard_layout_v<TexDictionary>, "TexDictionary must be standard-layout for plugin offsets");
 
 }
 

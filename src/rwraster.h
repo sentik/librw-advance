@@ -5,6 +5,7 @@
 #include "rwbase.h"
 #include "rwplg.h"
 #include "rwfwd.h"
+#include <type_traits>
 
 namespace rw {
 
@@ -145,6 +146,8 @@ void flipDXT(int32 type, uint8 *dst, uint8 *src, uint32 width, uint32 height);
 
 
 #define IGNORERASTERIMP 0
+
+static_assert(std::is_standard_layout_v<Raster>, "Raster must be standard-layout for plugin offsets");
 
 }
 

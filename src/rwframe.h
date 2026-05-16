@@ -5,6 +5,8 @@
 #include "rwbase.h"
 #include "rwplg.h"
 #include "rwobject.h"
+#include <functional>
+#include <type_traits>
 
 namespace rw {
 
@@ -100,10 +102,16 @@ struct ObjectWithFrame
 		}
 	}
 	void sync(void){ this->syncCB(this); }
+	void setSyncCB(Sync cb) noexcept { this->syncCB = cb; }
+	void setSyncCB(std::function<void(ObjectWithFrame*)> fn){
+		if(auto *ptr = fn.template target<Sync>()) setSyncCB(*ptr);
+	}
 	static ObjectWithFrame *fromFrame(LLLink *lnk){
 		return LLLinkGetData(lnk, ObjectWithFrame, inFrame);
 	}
 };
+
+static_assert(std::is_standard_layout_v<Frame>, "Frame must be standard-layout for plugin offsets");
 
 }
 

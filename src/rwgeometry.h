@@ -8,6 +8,7 @@
 #include "rwobject.h"
 #include "rwfwd.h"
 #include <array>
+#include <type_traits>
 
 namespace rw {
 
@@ -192,6 +193,9 @@ struct Geometry
 
 void registerMeshPlugin(void);
 void registerNativeDataPlugin(void);
+
+static_assert(std::is_standard_layout_v<Material>, "Material must be standard-layout for plugin offsets");
+static_assert(std::is_standard_layout_v<Geometry>, "Geometry must be standard-layout for plugin offsets");
 
 }
 
