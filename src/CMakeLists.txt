@@ -48,6 +48,19 @@ add_library(librw
     uvanim.cpp
     world.cpp
 
+    rw/plugin/concepts.h
+    rw/plugin/descriptor.h
+    rw/plugin/driver_platform_registry.cpp
+    rw/plugin/driver_platform_registry.h
+    rw/plugin/engine_module_registry.cpp
+    rw/plugin/engine_module_registry.h
+    rw/plugin/freeze.h
+    rw/plugin/object_registry.h
+    rw/plugin/offset.h
+    rw/plugin/plugin_list_core.cpp
+    rw/plugin/plugin_list_core.h
+    rw/plugin/types.h
+
     d3d/d3d8.cpp
     d3d/d3d8matfx.cpp
     d3d/d3d8render.cpp
@@ -150,7 +163,7 @@ set_target_properties(librw
         C_STANDARD 11
         C_EXTENSIONS OFF
         C_STANDARD_REQUIRED ON
-        CXX_STANDARD 17
+        CXX_STANDARD 23
         CXX_EXTENSIONS OFF
         CXX_STANDARD_REQUIRED ON
         PREFIX ""

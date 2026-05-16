@@ -133,6 +133,7 @@ project "librw"
 	defines { "LODEPNG_NO_COMPILE_CPP" }
 	files { "src/*.*" }
 	files { "src/*/*.*" }
+	files { "src/rw/plugin/*.*" }
 	filter { "platforms:*gl3" }
 		files { "src/gl/glad/*.*" }
 
