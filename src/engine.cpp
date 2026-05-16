@@ -21,6 +21,7 @@
 #include "d3d/rwd3d9.h"
 #include "gl/rwgl3.h"
 #include "gl/rwwdgl.h"
+#include "rw/plugin/freeze.h"
 
 #define PLUGIN_ID 0
 
@@ -240,6 +241,11 @@ Engine::init(MemoryFunctions *memfuncs)
 	d3d9::registerPlatformPlugins();
 	wdgl::registerPlatformPlugins();
 	gl3::registerPlatformPlugins();
+
+	rw::plugin::freezeAll<
+	    Frame, Clump, Atomic, Geometry, Material,
+	    Texture, Raster, Light, Camera,
+	    World, TexDictionary>();
 
 	Engine::state = Initialized;
 	return 1;
