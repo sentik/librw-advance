@@ -13,6 +13,7 @@
 #include "../rwanim.h"
 #include "../rwengine.h"
 #include "../rwplugins.h"
+#include "../rw/plugin/object_registry.h"
 #include "rwxbox.h"
 
 namespace rw {
@@ -105,12 +106,35 @@ getSizeVertexFmt(void*, int32, int32)
 void
 registerVertexFormatPlugin(void)
 {
-	vertexFmtOffset = Geometry::registerPlugin(sizeof(uint32), ID_VERTEXFMT,
-	                         createVertexFmt, nil, copyVertexFmt);
-	Geometry::registerPluginStream(ID_VERTEXFMT,
-	                               readVertexFmt,
-	                               writeVertexFmt,
-	                               getSizeVertexFmt);
+	using namespace rw::plugin;
+	auto& reg = ObjectRegistry<Geometry>::instance();
+	auto result = reg.registerExtension<uint32>(fromRaw(ID_VERTEXFMT),
+		PluginLifecycle{
+			.construct = [](void* o, std::ptrdiff_t off) {
+				createVertexFmt(o, static_cast<int32>(off), 0);
+			},
+			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
+				copyVertexFmt(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+			},
+		},
+		PluginStream{
+			.read = [](rw::Stream& stream, std::int32_t len, void* o, std::ptrdiff_t off)
+				-> std::expected<void, StreamPluginError> {
+				readVertexFmt(&stream, len, o, static_cast<int32>(off), 0);
+				return {};
+			},
+			.write = [](rw::Stream& stream, std::int32_t len, const void* o, std::ptrdiff_t off)
+				-> std::expected<void, StreamPluginError> {
+				writeVertexFmt(&stream, len, const_cast<void*>(o), static_cast<int32>(off), 0);
+				return {};
+			},
+			.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
+				return getSizeVertexFmt(const_cast<void*>(o), static_cast<int32>(off), 0);
+			},
+		},
+		"vertexfmt");
+	if(result)
+		vertexFmtOffset = static_cast<int32>(result->value());
 }
 
 }

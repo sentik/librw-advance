@@ -29,9 +29,10 @@ static SurfaceProperties defaultSurfaceProps = { 1.0f, 1.0f, 1.0f };
 Geometry*
 Geometry::create(int32 numVerts, int32 numTris, uint32 flags)
 {
-	Geometry *geo = (Geometry*)rwMalloc(s_plglist.size, MEMDUR_EVENT | ID_GEOMETRY);
+	auto& geoReg = rw::plugin::ObjectRegistry<Geometry>::instance();
+	Geometry *geo = (Geometry*)rwMalloc(geoReg.objectSize(), MEMDUR_EVENT | ID_GEOMETRY);
 	if(geo == nil){
-		RWERROR((ERR_ALLOC, s_plglist.size));
+		RWERROR((ERR_ALLOC, geoReg.objectSize()));
 		return nil;
 	}
 	numAllocated++;
@@ -84,7 +85,7 @@ Geometry::create(int32 numVerts, int32 numTris, uint32 flags)
 	geo->instData = nil;
 	geo->refCount = 1;
 
-	s_plglist.construct(geo);
+	geoReg.construct(*geo);
 	return geo;
 }
 
@@ -93,7 +94,7 @@ Geometry::destroy(void)
 {
 	this->refCount--;
 	if(this->refCount <= 0){
-		s_plglist.destruct(this);
+		rw::plugin::ObjectRegistry<Geometry>::instance().destruct(*this);
 		// Also frees colors and tex coords
 		rwFree(this->triangles);
 		// Also frees their data
@@ -193,7 +194,7 @@ Geometry::streamRead(Stream *stream)
 		defaultSurfaceProps = reset;
 	if(ret == nil)
 		goto fail;
-	if(s_plglist.streamRead(stream, geo))
+	if(rw::plugin::ObjectRegistry<Geometry>::instance().streamRead(*stream, *geo))
 		return geo;
 
 fail:
@@ -281,7 +282,7 @@ Geometry::streamWrite(Stream *stream)
 
 	this->matList.streamWrite(stream);
 
-	s_plglist.streamWrite(stream, this);
+	(void)rw::plugin::ObjectRegistry<Geometry>::instance().streamWrite(*stream, *this);
 	return true;
 }
 
@@ -291,7 +292,7 @@ Geometry::streamGetSize(void)
 	uint32 size = 0;
 	size += 12 + geoStructSize(this);
 	size += 12 + this->matList.streamGetSize();
-	size += 12 + s_plglist.streamGetSize(this);
+	size += 12 + static_cast<uint32>(rw::plugin::ObjectRegistry<Geometry>::instance().streamGetSize(*this));
 	return size;
 }
 

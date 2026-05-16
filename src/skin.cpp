@@ -379,12 +379,40 @@ registerSkinPlugin(void)
 	wdgl::initSkin();
 	gl3::initSkin();
 
-	int32 o;
-	o = Geometry::registerPlugin(sizeof(Skin*), ID_SKIN,
-	                             createSkin, destroySkin, copySkin);
-	Geometry::registerPluginStream(ID_SKIN,
-	                               readSkin, writeSkin, getSizeSkin);
-	skinGlobals.geoOffset = o;
+	{
+		using namespace rw::plugin;
+		auto& reg = ObjectRegistry<Geometry>::instance();
+		auto result = reg.registerExtension<Skin*>(fromRaw(ID_SKIN),
+			PluginLifecycle{
+				.construct = [](void* o, std::ptrdiff_t off) {
+					createSkin(o, static_cast<int32>(off), 0);
+				},
+				.destruct = [](void* o, std::ptrdiff_t off) {
+					destroySkin(o, static_cast<int32>(off), 0);
+				},
+				.copy = [](void* d, const void* s, std::ptrdiff_t off) {
+					copySkin(d, const_cast<void*>(s), static_cast<int32>(off), 0);
+				},
+			},
+			PluginStream{
+				.read = [](rw::Stream& stream, std::int32_t len, void* o, std::ptrdiff_t off)
+					-> std::expected<void, StreamPluginError> {
+					if(readSkin(&stream, len, o, static_cast<int32>(off), 0)) return {};
+					return std::unexpected(StreamPluginError::callbackFailed);
+				},
+				.write = [](rw::Stream& stream, std::int32_t len, const void* o, std::ptrdiff_t off)
+					-> std::expected<void, StreamPluginError> {
+					writeSkin(&stream, len, const_cast<void*>(o), static_cast<int32>(off), 0);
+					return {};
+				},
+				.getSize = [](const void* o, std::ptrdiff_t off) -> std::int32_t {
+					return getSizeSkin(const_cast<void*>(o), static_cast<int32>(off), 0);
+				},
+			},
+			"skin-geometry");
+		if(result)
+			skinGlobals.geoOffset = static_cast<int32>(result->value());
+	}
 	{
 		using namespace rw::plugin;
 		auto& reg = ObjectRegistry<Atomic>::instance();

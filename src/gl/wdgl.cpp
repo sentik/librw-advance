@@ -14,6 +14,7 @@
 #include "../rwanim.h"
 #include "../rwengine.h"
 #include "../rwplugins.h"
+#include "../rw/plugin/object_registry.h"
 #include "rwwdgl.h"
 
 #ifdef RW_OPENGL
@@ -298,12 +299,30 @@ getSizeNativeData(void *object, int32, int32)
 void
 registerNativeDataPlugin(void)
 {
-	Geometry::registerPlugin(0, ID_NATIVEDATA,
-	                         nil, destroyNativeData, nil);
-	Geometry::registerPluginStream(ID_NATIVEDATA,
-	                               readNativeData,
-	                               writeNativeData,
-	                               getSizeNativeData);
+	using namespace rw::plugin;
+	auto& reg = ObjectRegistry<Geometry>::instance();
+	(void)reg.registerExtension<uint8_t>(fromRaw(ID_NATIVEDATA),
+		PluginLifecycle{
+			.destruct = [](void* o, std::ptrdiff_t) {
+				destroyNativeData(o, 0, 0);
+			},
+		},
+		PluginStream{
+			.read = [](rw::Stream& stream, std::int32_t len, void* o, std::ptrdiff_t)
+				-> std::expected<void, StreamPluginError> {
+				if(readNativeData(&stream, len, o, 0, 0)) return {};
+				return std::unexpected(StreamPluginError::callbackFailed);
+			},
+			.write = [](rw::Stream& stream, std::int32_t len, const void* o, std::ptrdiff_t)
+				-> std::expected<void, StreamPluginError> {
+				writeNativeData(&stream, len, const_cast<void*>(o), 0, 0);
+				return {};
+			},
+			.getSize = [](const void* o, std::ptrdiff_t) -> std::int32_t {
+				return getSizeNativeData(const_cast<void*>(o), 0, 0);
+			},
+		},
+		"nativedata-wdgl");
 }
 
 void
