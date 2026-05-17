@@ -9,6 +9,7 @@
 #include "rwframe.h"
 #include "rwengine.h"
 #include "rw/plugin/object_registry.h"
+#include "rw/plugin/engine_module_registry.h"
 
 #define PLUGIN_ID ID_FRAMELIST
 
@@ -16,13 +17,15 @@ namespace rw {
 
 int32 Frame::numAllocated;
 
-static void *frameOpen(void *object, int32 offset, int32 size) { engine->frameDirtyList.init(); return object; }
-static void *frameClose(void *object, int32 offset, int32 size) { return object; }
-
 void
 Frame::registerModule(void)
 {
-	Engine::registerPlugin(0, ID_FRAMEMODULE, frameOpen, frameClose);
+	using namespace rw::plugin;
+	(void)EngineModuleRegistry::instance().registerModuleLifecycle(
+	    fromRaw(ID_FRAMEMODULE),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) { engine->frameDirtyList.init(); },
+	    });
 }
 
 Frame*

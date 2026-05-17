@@ -14,6 +14,7 @@
 #include "rwanim.h"
 #include "rwplugins.h"
 #include "rw/plugin/object_registry.h"
+#include "rw/plugin/engine_module_registry.h"
 
 #define PLUGIN_ID ID_UVANIMATION
 
@@ -433,18 +434,15 @@ getSizeUVAnim(void *object, std::ptrdiff_t offset, int32)
 	return size ? size + 12 + 4 : 0;
 }
 
-static void*
-uvanimOpen(void *object, int32 offset, int32 size)
-{
-	registerUVAnimInterpolator();
-	return object;
-}
-static void *uvanimClose(void *object, int32 offset, int32 size) { return object; }
-
 void
 registerUVAnimPlugin(void)
 {
-	Engine::registerPlugin(0, ID_UVANIMATION, uvanimOpen, uvanimClose);
+	using namespace rw::plugin;
+	(void)EngineModuleRegistry::instance().registerModuleLifecycle(
+	    fromRaw(ID_UVANIMATION),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) { registerUVAnimInterpolator(); },
+	    });
 	{
 		using namespace rw::plugin;
 		auto& reg = ObjectRegistry<Material>::instance();

@@ -198,11 +198,6 @@ struct Engine
 	static uint32 getMultiSamplingLevels(void);
 	static bool32 setMultiSamplingLevels(uint32 levels);
 
-	static PluginList s_plglist;
-	static int32 registerPlugin(int32 size, uint32 id,
-	                            Constructor ctor, Destructor dtor){
-		return s_plglist.registerPlugin(size, id, ctor, dtor, nil);
-	}
 };
 
 extern Engine *engine;

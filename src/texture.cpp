@@ -6,6 +6,7 @@
 #define WITH_D3D
 #include "rwbase.h"
 #include "rw/plugin/object_registry.h"
+#include "rw/plugin/engine_module_registry.h"
 #include "rwerror.h"
 #include "rwplg.h"
 #include "rwpipeline.h"
@@ -44,47 +45,45 @@ struct TextureGlobals
 
 	LinkList textures;
 };
-int32 textureModuleOffset;
+std::ptrdiff_t textureModuleOffset;
 
-#define TEXTUREGLOBAL(v) (PLUGINOFFSET(TextureGlobals, engine, textureModuleOffset)->v)
-
-static void*
-textureOpen(void *object, int32 offset, int32 size)
-{
-	TexDictionary *texdict;
-	textureModuleOffset = offset;
-	TEXTUREGLOBAL(texDicts).init();
-	TEXTUREGLOBAL(textures).init();
-	texdict = TexDictionary::create();
-	TEXTUREGLOBAL(initialTexDict) = texdict;
-	TexDictionary::setCurrent(texdict);
-	TEXTUREGLOBAL(loadTextures) = 1;
-	TEXTUREGLOBAL(makeDummies) = 0;
-	TEXTUREGLOBAL(mipmapping) = 0;
-	TEXTUREGLOBAL(autoMipmapping) = 0;
-	return object;
-}
-static void*
-textureClose(void *object, int32 offset, int32 size)
-{
-	FORLIST(lnk, TEXTUREGLOBAL(texDicts))
-		TexDictionary::fromLink(lnk)->destroy();
-	TEXTUREGLOBAL(initialTexDict) = nil;
-	TEXTUREGLOBAL(currentTexDict) = nil;
-
-	FORLIST(lnk, TEXTUREGLOBAL(textures)){
-		Texture *tex = LLLinkGetData(lnk, Texture, inGlobalList);
-//		printf("Tex still allocated: %d %s %s\n", tex->refCount, tex->name.data(), tex->mask.data());
-		assert(tex->dict == nil);
-		tex->destroy();
-	}
-	return object;
-}
+#define TEXTUREGLOBAL(v) (((TextureGlobals*)((uint8*)engine + textureModuleOffset))->v)
 
 void
 Texture::registerModule(void)
 {
-	Engine::registerPlugin(sizeof(TextureGlobals), ID_TEXTUREMODULE, textureOpen, textureClose);
+	using namespace rw::plugin;
+	auto result = EngineModuleRegistry::instance().registerModuleStorage<TextureGlobals>(
+	    fromRaw(ID_TEXTUREMODULE),
+	    PluginLifecycle{
+	        .construct = [](void* obj, std::ptrdiff_t off) {
+	            textureModuleOffset = off;
+	            TextureGlobals *g = (TextureGlobals*)((uint8*)obj + off);
+	            g->texDicts.init();
+	            g->textures.init();
+	            TexDictionary *texdict = TexDictionary::create();
+	            g->initialTexDict = texdict;
+	            TexDictionary::setCurrent(texdict);
+	            g->loadTextures = 1;
+	            g->makeDummies = 0;
+	            g->mipmapping = 0;
+	            g->autoMipmapping = 0;
+	        },
+	        .destruct = [](void* obj, std::ptrdiff_t off) {
+	            TextureGlobals *g = (TextureGlobals*)((uint8*)obj + off);
+	            FORLIST(lnk, g->texDicts)
+	                TexDictionary::fromLink(lnk)->destroy();
+	            g->initialTexDict = nil;
+	            g->currentTexDict = nil;
+	            FORLIST(lnk, g->textures){
+	                Texture *tex = LLLinkGetData(lnk, Texture, inGlobalList);
+	                assert(tex->dict == nil);
+	                tex->destroy();
+	            }
+	        },
+	    });
+	if(result)
+	    textureModuleOffset = *result;
 }
 
 void
@@ -247,13 +246,13 @@ TexDictionary::streamGetSize(void)
 void
 TexDictionary::setCurrent(TexDictionary *txd)
 {
-	PLUGINOFFSET(TextureGlobals, engine, textureModuleOffset)->currentTexDict = txd;
+	((TextureGlobals*)((uint8*)engine + textureModuleOffset))->currentTexDict = txd;
 }
 
 TexDictionary*
 TexDictionary::getCurrent(void)
 {
-	return PLUGINOFFSET(TextureGlobals, engine, textureModuleOffset)->currentTexDict;
+	return ((TextureGlobals*)((uint8*)engine + textureModuleOffset))->currentTexDict;
 }
 
 //

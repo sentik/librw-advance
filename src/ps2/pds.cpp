@@ -12,6 +12,7 @@
 #include "../rwanim.h"
 #include "../rwplugins.h"
 #include "../rw/plugin/object_registry.h"
+#include "../rw/plugin/engine_module_registry.h"
 #include "rwps2.h"
 #include "rwps2plg.h"
 
@@ -60,22 +61,21 @@ materialPDSRights(void *object, int32, int32, uint32 data)
 //	printf("mat pds: %x %x %x\n", data, m->pipeline->pluginID, m->pipeline->pluginData);
 }
 
-static void *pdsOpen(void *object, int32 offset, int32 size) { return object; }
-static void*
-pdsClose(void *object, int32 offset, int32 size)
-{
-	// TODO MEMORY: free registered pipelines
-	rwFree(pdsGlobals.pipes);
-	return object;
-}
-
 void
 registerPDSPlugin(int32 n)
 {
 	pdsGlobals.maxPipes = n;
 	pdsGlobals.numPipes = 0;
 	pdsGlobals.pipes = nil;
-	Engine::registerPlugin(0, ID_PDS, pdsOpen, pdsClose);
+	using namespace rw::plugin;
+	(void)EngineModuleRegistry::instance().registerModuleLifecycle(
+	    fromRaw(ID_PDS),
+	    PluginLifecycle{
+	        .destruct = [](void*, std::ptrdiff_t) {
+	            // TODO MEMORY: free registered pipelines
+	            rwFree(pdsGlobals.pipes);
+	        },
+	    });
 	{
 		using namespace rw::plugin;
 		(void)ObjectRegistry<Atomic>::instance().registerRightsPlugin(

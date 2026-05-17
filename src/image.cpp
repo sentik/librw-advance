@@ -18,6 +18,8 @@
 #include "d3d/rwd3d8.h"
 #include "d3d/rwd3d9.h"
 
+#include "rw/plugin/engine_module_registry.h"
+
 #define PLUGIN_ID ID_IMAGE
 
 namespace rw {
@@ -38,9 +40,9 @@ struct ImageGlobals
 	FileAssociation fileFormats[10];
 	int numFileFormats;
 };
-int32 imageModuleOffset;
+std::ptrdiff_t imageModuleOffset;
 
-#define IMAGEGLOBAL(v) (PLUGINOFFSET(ImageGlobals, engine, imageModuleOffset)->v)
+#define IMAGEGLOBAL(v) (((ImageGlobals*)((uint8*)engine + imageModuleOffset))->v)
 
 // Image formats are as follows:
 //  32 bit has 4 bytes: 8888 RGBA
@@ -901,7 +903,7 @@ void
 Image::setSearchPath(const char *path)
 {
 	char *p, *end;
-	ImageGlobals *g = PLUGINOFFSET(ImageGlobals, engine, imageModuleOffset);
+	ImageGlobals *g = (ImageGlobals*)((uint8*)engine + imageModuleOffset);
 	rwFree(g->searchPaths);
 	g->numSearchPaths = 0;
 	if(path)
@@ -922,7 +924,7 @@ Image::setSearchPath(const char *path)
 void
 Image::printSearchPath(void)
 {
-	ImageGlobals *g = PLUGINOFFSET(ImageGlobals, engine, imageModuleOffset);
+	ImageGlobals *g = (ImageGlobals*)((uint8*)engine + imageModuleOffset);
 	char *p = g->searchPaths;
 	for(int i = 0; i < g->numSearchPaths; i++){
 		printf("%s\n", p);
@@ -933,7 +935,7 @@ Image::printSearchPath(void)
 char*
 Image::getFilename(const char *name)
 {
-	ImageGlobals *g = PLUGINOFFSET(ImageGlobals, engine, imageModuleOffset);
+	ImageGlobals *g = (ImageGlobals*)((uint8*)engine + imageModuleOffset);
 	void *f;
 	char *s, *p = g->searchPaths;
 	size_t len = strlen(name)+1;
@@ -1027,7 +1029,7 @@ Image::read(const char *imageName)
 bool32
 Image::registerFileFormat(const char *ext, fileRead read, fileWrite write)
 {
-	ImageGlobals *g = PLUGINOFFSET(ImageGlobals, engine, imageModuleOffset);
+	ImageGlobals *g = (ImageGlobals*)((uint8*)engine + imageModuleOffset);
 	if(g->numFileFormats >= (int)nelem(g->fileFormats))
 		return 0;
 	g->fileFormats[g->numFileFormats].extension = rwStrdup(ext, MEMDUR_EVENT);
@@ -1037,35 +1039,32 @@ Image::registerFileFormat(const char *ext, fileRead read, fileWrite write)
 	return 1;
 }
 
-static void*
-imageOpen(void *object, int32 offset, int32 size)
-{
-	imageModuleOffset = offset;
-	ImageGlobals *g = PLUGINOFFSET(ImageGlobals, engine, imageModuleOffset);
-	g->searchPaths = nil;
-	g->numSearchPaths = 0;
-	g->numFileFormats = 0;
-	return object;
-}
-
-static void*
-imageClose(void *object, int32 offset, int32 size)
-{
-	ImageGlobals *g = PLUGINOFFSET(ImageGlobals, engine, imageModuleOffset);
-	int i;
-	rwFree(g->searchPaths);
-	g->searchPaths = nil;
-	g->numSearchPaths = 0;
-	for(i = 0; i < g->numFileFormats; i++)
-		rwFree(g->fileFormats[i].extension);
-	g->numFileFormats = 0;
-	return object;
-}
-
 void
 Image::registerModule(void)
 {
-	Engine::registerPlugin(sizeof(ImageGlobals), ID_IMAGEMODULE, imageOpen, imageClose);
+	using namespace rw::plugin;
+	auto result = EngineModuleRegistry::instance().registerModuleStorage<ImageGlobals>(
+	    fromRaw(ID_IMAGEMODULE),
+	    PluginLifecycle{
+	        .construct = [](void* obj, std::ptrdiff_t off) {
+	            imageModuleOffset = off;
+	            ImageGlobals *g = (ImageGlobals*)((uint8*)obj + off);
+	            g->searchPaths = nil;
+	            g->numSearchPaths = 0;
+	            g->numFileFormats = 0;
+	        },
+	        .destruct = [](void* obj, std::ptrdiff_t off) {
+	            ImageGlobals *g = (ImageGlobals*)((uint8*)obj + off);
+	            rwFree(g->searchPaths);
+	            g->searchPaths = nil;
+	            g->numSearchPaths = 0;
+	            for(int i = 0; i < g->numFileFormats; i++)
+	                rwFree(g->fileFormats[i].extension);
+	            g->numFileFormats = 0;
+	        },
+	    });
+	if(result)
+	    imageModuleOffset = *result;
 }
 
 

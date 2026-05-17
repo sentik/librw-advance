@@ -16,6 +16,7 @@
 #include "rwanim.h"
 #include "rwplugins.h"
 #include "rw/plugin/object_registry.h"
+#include "rw/plugin/engine_module_registry.h"
 #include "ps2/rwps2.h"
 #include "ps2/rwps2plg.h"
 #include "d3d/rwxbox.h"
@@ -375,38 +376,33 @@ assert(t >= in1->time && t <= in2->time);
 	out->q = slerp(in1->q, in2->q, a);
 }
 
-static void*
-hanimOpen(void *object, int32 offset, int32 size)
-{
-	AnimInterpolatorInfo *info = rwNewT(AnimInterpolatorInfo, 1, MEMDUR_GLOBAL | ID_HANIM);
-	info->id = 1;
-	info->interpKeyFrameSize = sizeof(HAnimInterpFrame);
-	info->animKeyFrameSize = sizeof(HAnimKeyFrame);
-	info->customDataSize = 0;
-	info->applyCB = hanimApplyCB;
-	info->blendCB = nil;
-	info->interpCB = hanimInterpCB;
-	info->addCB = nil;
-	info->mulRecipCB = nil;
-	info->streamRead = hAnimFrameRead;
-	info->streamWrite = hAnimFrameWrite;
-	info->streamGetSize = hAnimFrameGetSize;
-	AnimInterpolatorInfo::registerInterp(info);
-	return object;
-}
-
-static void*
-hanimClose(void *object, int32 offset, int32 size)
-{
-	AnimInterpolatorInfo::unregisterInterp(AnimInterpolatorInfo::find(1));
-	return object;
-}
-
-
 void
 registerHAnimPlugin(void)
 {
-	Engine::registerPlugin(0, ID_HANIM, hanimOpen, hanimClose);
+	using namespace rw::plugin;
+	(void)EngineModuleRegistry::instance().registerModuleLifecycle(
+	    fromRaw(ID_HANIM),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            AnimInterpolatorInfo *info = rwNewT(AnimInterpolatorInfo, 1, MEMDUR_GLOBAL | ID_HANIM);
+	            info->id = 1;
+	            info->interpKeyFrameSize = sizeof(HAnimInterpFrame);
+	            info->animKeyFrameSize = sizeof(HAnimKeyFrame);
+	            info->customDataSize = 0;
+	            info->applyCB = hanimApplyCB;
+	            info->blendCB = nil;
+	            info->interpCB = hanimInterpCB;
+	            info->addCB = nil;
+	            info->mulRecipCB = nil;
+	            info->streamRead = hAnimFrameRead;
+	            info->streamWrite = hAnimFrameWrite;
+	            info->streamGetSize = hAnimFrameGetSize;
+	            AnimInterpolatorInfo::registerInterp(info);
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+	            AnimInterpolatorInfo::unregisterInterp(AnimInterpolatorInfo::find(1));
+	        },
+	    });
 
 	using namespace rw::plugin;
 	auto& reg = ObjectRegistry<Frame>::instance();

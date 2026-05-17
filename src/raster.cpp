@@ -9,6 +9,7 @@
 #include "rwpipeline.h"
 #include "rwraster.h"
 #include "rw/plugin/object_registry.h"
+#include "rw/plugin/engine_module_registry.h"
 #include "rwscene.h"
 #include "rwgeometry.h"
 #include "rwtexture.h"
@@ -32,31 +33,27 @@ struct RasterGlobals
 	int32 sp;
 	Raster *stack[32];
 };
-int32 rasterModuleOffset;
+std::ptrdiff_t rasterModuleOffset;
 
-#define RASTERGLOBAL(v) (PLUGINOFFSET(RasterGlobals, engine, rasterModuleOffset)->v)
-
-static void*
-rasterOpen(void *object, int32 offset, int32 size)
-{
-	int i;
-	rasterModuleOffset = offset;
-	RASTERGLOBAL(sp) = -1;
-	for(i = 0; i < (int)nelem(RASTERGLOBAL(stack)); i++)
-		RASTERGLOBAL(stack)[i] = nil;
-	return object;
-}
-
-static void*
-rasterClose(void *object, int32 offset, int32 size)
-{
-	return object;
-}
+#define RASTERGLOBAL(v) (((RasterGlobals*)((uint8*)engine + rasterModuleOffset))->v)
 
 void
 Raster::registerModule(void)
 {
-	Engine::registerPlugin(sizeof(RasterGlobals), ID_RASTERMODULE, rasterOpen, rasterClose);
+	using namespace rw::plugin;
+	auto result = EngineModuleRegistry::instance().registerModuleStorage<RasterGlobals>(
+	    fromRaw(ID_RASTERMODULE),
+	    PluginLifecycle{
+	        .construct = [](void* obj, std::ptrdiff_t off) {
+	            rasterModuleOffset = off;
+	            RasterGlobals *g = (RasterGlobals*)((uint8*)obj + off);
+	            g->sp = -1;
+	            for(int i = 0; i < (int)nelem(g->stack); i++)
+	                g->stack[i] = nil;
+	        },
+	    });
+	if(result)
+	    rasterModuleOffset = *result;
 }
 
 Raster*
@@ -199,7 +196,7 @@ Raster::show(uint32 flags)
 Raster*
 Raster::pushContext(Raster *raster)
 {
-	RasterGlobals *g = PLUGINOFFSET(RasterGlobals, engine, rasterModuleOffset);
+	RasterGlobals *g = (RasterGlobals*)((uint8*)engine + rasterModuleOffset);
 	if(g->sp >= (int32)nelem(g->stack)-1)
 		return nil;
 	return g->stack[++g->sp] = raster;
@@ -208,7 +205,7 @@ Raster::pushContext(Raster *raster)
 Raster*
 Raster::popContext(void)
 {
-	RasterGlobals *g = PLUGINOFFSET(RasterGlobals, engine, rasterModuleOffset);
+	RasterGlobals *g = (RasterGlobals*)((uint8*)engine + rasterModuleOffset);
 	if(g->sp < 0)
 		return nil;
 	return g->stack[g->sp--];
@@ -217,7 +214,7 @@ Raster::popContext(void)
 Raster*
 Raster::getCurrentContext(void)
 {
-	RasterGlobals *g = PLUGINOFFSET(RasterGlobals, engine, rasterModuleOffset);
+	RasterGlobals *g = (RasterGlobals*)((uint8*)engine + rasterModuleOffset);
 	if(g->sp < 0 || g->sp >= (int32)nelem(g->stack))
 		return nil;
 	return g->stack[g->sp];

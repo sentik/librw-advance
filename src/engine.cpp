@@ -22,6 +22,7 @@
 #include "gl/rwgl3.h"
 #include "gl/rwwdgl.h"
 #include "rw/plugin/freeze.h"
+#include "rw/plugin/engine_module_registry.h"
 
 #define PLUGIN_ID 0
 
@@ -36,7 +37,6 @@
 namespace rw {
 
 Engine *engine;
-PluginList Engine::s_plglist(sizeof(Engine));
 Engine::State Engine::state = Dead;
 MemoryFunctions Engine::memfuncs;
 PluginList Driver::s_plglist[NUM_PLATFORMS];
@@ -219,6 +219,7 @@ Engine::init(MemoryFunctions *memfuncs)
 	Image::registerModule();
 	Raster::registerModule();
 	Texture::registerModule();
+	rw::plugin::EngineModuleRegistry::instance().freeze();
 
 	// TODO: reset all allocation counts here. or maybe do that in modules?
 	Frame::numAllocated = 0;
@@ -261,7 +262,7 @@ Engine::open(EngineOpenParams *p)
 	}
 
 	// Allocate engine
-	engine = (Engine*)rwNew(Engine::s_plglist.size, MEMDUR_GLOBAL);
+	engine = (Engine*)rwNew(rw::plugin::EngineModuleRegistry::instance().engineSize(), MEMDUR_GLOBAL);
 	engine->currentCamera = nil;
 	engine->currentWorld = nil;
 	engine->filefuncs.rwfopen = (void *(*)(const char*, const char*))fopen;
@@ -320,7 +321,7 @@ Engine::start(void)
 
 	engine->device.system(DEVICEINIT, nil, 0);
 
-	Engine::s_plglist.construct(engine);
+	rw::plugin::EngineModuleRegistry::instance().construct(engine);
 	for(uint i = 0; i < NUM_PLATFORMS; i++)
 		Driver::s_plglist[i].construct(rw::engine->driver[i]);
 
@@ -379,7 +380,7 @@ Engine::stop(void)
 
 	for(uint i = 0; i < NUM_PLATFORMS; i++)
 		Driver::s_plglist[i].destruct(rw::engine->driver[i]);
-	Engine::s_plglist.destruct(engine);
+	rw::plugin::EngineModuleRegistry::instance().destruct(engine);
 
 	engine->device.system(DEVICETERM, nil, 0);
 
