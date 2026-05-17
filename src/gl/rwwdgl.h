@@ -38,10 +38,10 @@ void setAttribPointers(InstanceDataHeader *inst);
 void packattrib(uint8 *dst, float32 *src, AttribDesc *a, float32 scale);
 void unpackattrib(float *dst, uint8 *src, AttribDesc *a, float32 scale);
 
-void *destroyNativeData(void *object, int32, int32);
+void *destroyNativeData(void *object);
 Stream *readNativeData(Stream *stream, int32 len, void *object, int32, int32);
 Stream *writeNativeData(Stream *stream, int32 len, void *object, int32, int32);
-int32 getSizeNativeData(void *object, int32, int32);
+int32 getSizeNativeData(void *object);
 void registerNativeDataPlugin(void);
 
 void printPipeinfo(Atomic *a);

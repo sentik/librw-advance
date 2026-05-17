@@ -74,7 +74,7 @@ struct Device
 struct Driver
 {
 	ObjPipeline *defaultPipeline;
-	int32 rasterNativeOffset;
+	ptrdiff_t rasterNativeOffset;
 
 	Raster* (*rasterCreate)(Raster*);
 	uint8 *(*rasterLock)(Raster*, int32 level, int32 lockMode);

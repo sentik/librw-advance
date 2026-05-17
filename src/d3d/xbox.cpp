@@ -33,7 +33,7 @@ registerPlatformPlugins(void)
 	    PluginLifecycle{
 	        .construct = [](void*, std::ptrdiff_t) {
 	            engine->driver[PLATFORM_XBOX]->defaultPipeline = makeDefaultPipeline();
-	            engine->driver[PLATFORM_XBOX]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
+	            engine->driver[PLATFORM_XBOX]->rasterNativeOffset = nativeRasterOffset.value();
 	            engine->driver[PLATFORM_XBOX]->rasterCreate = rasterCreate;
 	            engine->driver[PLATFORM_XBOX]->rasterLock = rasterLock;
 	            engine->driver[PLATFORM_XBOX]->rasterUnlock = rasterUnlock;
@@ -45,7 +45,7 @@ registerPlatformPlugins(void)
 }
 
 void*
-destroyNativeData(void *object, int32, int32)
+destroyNativeData(void *object)
 {
 	Geometry *geometry = (Geometry*)object;
 	if(geometry->instData == nil ||
@@ -165,7 +165,7 @@ writeNativeData(Stream *stream, int32 len, void *object, int32, int32)
 }
 
 int32
-getSizeNativeData(void *object, int32, int32)
+getSizeNativeData(void *object)
 {
 	Geometry *geometry = (Geometry*)object;
 	if(geometry->instData == nil ||
@@ -183,7 +183,7 @@ registerNativeDataPlugin(void)
 	(void)reg.registerExtension<uint8_t>(fromRaw(ID_NATIVEDATA),
 		PluginLifecycle{
 			.destruct = [](void* o, std::ptrdiff_t) {
-				destroyNativeData(o, 0, 0);
+				destroyNativeData(o);
 			},
 		},
 		PluginStream{
@@ -198,7 +198,7 @@ registerNativeDataPlugin(void)
 				return {};
 			},
 			.getSize = [](const void* o, std::ptrdiff_t) -> std::int32_t {
-				return getSizeNativeData(const_cast<void*>(o), 0, 0);
+				return getSizeNativeData(const_cast<void*>(o));
 			},
 		},
 		"nativedata-xbox");
@@ -298,7 +298,7 @@ uninstance(rw::ObjPipeline *rwpipe, Atomic *atomic)
 	pipe->uninstanceCB(geo, header);
 	geo->generateTriangles();
 	geo->flags &= ~Geometry::NATIVE;
-	destroyNativeData(geo, 0, 0);
+	destroyNativeData(geo);
 }
 
 void

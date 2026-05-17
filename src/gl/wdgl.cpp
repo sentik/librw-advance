@@ -228,7 +228,7 @@ unpackattrib(float *dst, uint8 *src, AttribDesc *a, float32 scale=1.0f)
 }
 
 void*
-destroyNativeData(void *object, int32, int32)
+destroyNativeData(void *object)
 {
 	Geometry *geometry = (Geometry*)object;
 	if(geometry->instData == nil ||
@@ -280,7 +280,7 @@ writeNativeData(Stream *stream, int32, void *object, int32, int32)
 }
 
 int32
-getSizeNativeData(void *object, int32, int32)
+getSizeNativeData(void *object)
 {
 	Geometry *geometry = (Geometry*)object;
 	if(geometry->instData == nil ||
@@ -298,7 +298,7 @@ registerNativeDataPlugin(void)
 	(void)reg.registerExtension<uint8_t>(fromRaw(ID_NATIVEDATA),
 		PluginLifecycle{
 			.destruct = [](void* o, std::ptrdiff_t) {
-				destroyNativeData(o, 0, 0);
+				destroyNativeData(o);
 			},
 		},
 		PluginStream{
@@ -313,7 +313,7 @@ registerNativeDataPlugin(void)
 				return {};
 			},
 			.getSize = [](const void* o, std::ptrdiff_t) -> std::int32_t {
-				return getSizeNativeData(const_cast<void*>(o), 0, 0);
+				return getSizeNativeData(const_cast<void*>(o));
 			},
 		},
 		"nativedata-wdgl");
@@ -532,7 +532,7 @@ uninstance(rw::ObjPipeline *rwpipe, Atomic *atomic)
 	geo->generateTriangles();
 
 	geo->flags &= ~Geometry::NATIVE;
-	destroyNativeData(geo, 0, 0);
+	destroyNativeData(geo);
 }
 
 void

@@ -256,23 +256,23 @@ MeshHeader::guessNumTriangles(void)
 // Native Data
 
 static void*
-destroyNativeData(void *object, int32 offset, int32 size)
+destroyNativeData(void *object)
 {
 	Geometry *geometry = (Geometry*)object;
 	if(geometry->instData == nil)
 		return object;
 	if(geometry->instData->platform == PLATFORM_PS2)
-		return ps2::destroyNativeData(object, offset, size);
+		return ps2::destroyNativeData(object);
 	if(geometry->instData->platform == PLATFORM_WDGL)
-		return wdgl::destroyNativeData(object, offset, size);
+		return wdgl::destroyNativeData(object);
 	if(geometry->instData->platform == PLATFORM_XBOX)
-		return xbox::destroyNativeData(object, offset, size);
+		return xbox::destroyNativeData(object);
 	if(geometry->instData->platform == PLATFORM_D3D8)
-		return d3d8::destroyNativeData(object, offset, size);
+		return d3d8::destroyNativeData(object);
 	if(geometry->instData->platform == PLATFORM_D3D9)
-		return d3d9::destroyNativeData(object, offset, size);
+		return d3d9::destroyNativeData(object);
 	if(geometry->instData->platform == PLATFORM_GL3)
-		return gl3::destroyNativeData(object, offset, size);
+		return gl3::destroyNativeData(object);
 	return object;
 }
 
@@ -329,21 +329,21 @@ writeNativeData(Stream *stream, int32 len, void *object, int32 o, int32 s)
 }
 
 static int32
-getSizeNativeData(void *object, int32 offset, int32 size)
+getSizeNativeData(void *object)
 {
 	Geometry *geometry = (Geometry*)object;
 	if(geometry->instData == nil)
 		return 0;
 	if(geometry->instData->platform == PLATFORM_PS2)
-		return ps2::getSizeNativeData(object, offset, size);
+		return ps2::getSizeNativeData(object);
 	else if(geometry->instData->platform == PLATFORM_WDGL)
-		return wdgl::getSizeNativeData(object, offset, size);
+		return wdgl::getSizeNativeData(object);
 	else if(geometry->instData->platform == PLATFORM_XBOX)
-		return xbox::getSizeNativeData(object, offset, size);
+		return xbox::getSizeNativeData(object);
 	else if(geometry->instData->platform == PLATFORM_D3D8)
-		return d3d8::getSizeNativeData(object, offset, size);
+		return d3d8::getSizeNativeData(object);
 	else if(geometry->instData->platform == PLATFORM_D3D9)
-		return d3d9::getSizeNativeData(object, offset, size);
+		return d3d9::getSizeNativeData(object);
 	return 0;
 }
 
@@ -355,7 +355,7 @@ registerNativeDataPlugin(void)
 	(void)reg.registerExtension<uint8_t>(fromRaw(ID_NATIVEDATA),
 		PluginLifecycle{
 			.destruct = [](void* o, std::ptrdiff_t) {
-				destroyNativeData(o, 0, 0);
+				destroyNativeData(o);
 			},
 		},
 		PluginStream{
@@ -370,7 +370,7 @@ registerNativeDataPlugin(void)
 				return {};
 			},
 			.getSize = [](const void* o, std::ptrdiff_t) -> std::int32_t {
-				return getSizeNativeData(const_cast<void*>(o), 0, 0);
+				return getSizeNativeData(const_cast<void*>(o));
 			},
 		},
 		"nativedata-generic");

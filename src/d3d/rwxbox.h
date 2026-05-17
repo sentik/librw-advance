@@ -35,10 +35,10 @@ struct InstanceDataHeader : rw::InstanceDataHeader
 	uint8 *data;
 };
 
-void *destroyNativeData(void *object, int32, int32);
+void *destroyNativeData(void *object);
 Stream *readNativeData(Stream *stream, int32 len, void *object, int32, int32);
 Stream *writeNativeData(Stream *stream, int32 len, void *object, int32, int32);
-int32 getSizeNativeData(void *object, int32, int32);
+int32 getSizeNativeData(void *object);
 void registerNativeDataPlugin(void);
 
 class ObjPipeline : public rw::ObjPipeline

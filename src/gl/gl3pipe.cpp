@@ -43,7 +43,7 @@ freeInstanceData(Geometry *geometry)
 }
 
 void*
-destroyNativeData(void *object, int32, int32)
+destroyNativeData(void *object)
 {
 	freeInstanceData((Geometry*)object);
 	return object;
@@ -328,7 +328,7 @@ makeDefaultPipeline(void)
 }
 
 #else
-void *destroyNativeData(void *object, int32, int32) { return object; }
+void *destroyNativeData(void *object) { return object; }
 #endif
 
 }

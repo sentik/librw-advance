@@ -250,7 +250,7 @@ void drawInst_GSemu(InstanceDataHeader *header, InstanceData *inst);
 void drawInst(InstanceDataHeader *header, InstanceData *inst);
 
 
-void *destroyNativeData(void *object, int32, int32);
+void *destroyNativeData(void *object);
 
 ObjPipeline *makeDefaultPipeline(void);
 
