@@ -16,6 +16,7 @@
 #include "../rwplugins.h"
 #include "rwd3d.h"
 #include "rwd3d9.h"
+#include "../rw/plugin/driver_platform_registry.h"
 
 namespace rw {
 namespace d3d9 {
@@ -373,34 +374,27 @@ destroySkinShaders(void)
 
 #endif
 
-static void*
-skinOpen(void *o, int32, int32)
-{
-#ifdef RW_D3D9
-	createSkinShaders();
-#endif
-
-	skinGlobals.pipelines[PLATFORM_D3D9] = makeSkinPipeline();
-	return o;
-}
-
-static void*
-skinClose(void *o, int32, int32)
-{
-#ifdef RW_D3D9
-	destroySkinShaders();
-#endif
-
-	((ObjPipeline*)skinGlobals.pipelines[PLATFORM_D3D9])->destroy();
-	skinGlobals.pipelines[PLATFORM_D3D9] = nil;
-	return o;
-}
-
 void
 initSkin(void)
 {
-	Driver::registerPlugin(PLATFORM_D3D9, 0, ID_SKIN,
-	                       skinOpen, skinClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_D3D9, fromRaw(ID_SKIN),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+#ifdef RW_D3D9
+	            createSkinShaders();
+#endif
+	            skinGlobals.pipelines[PLATFORM_D3D9] = makeSkinPipeline();
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+#ifdef RW_D3D9
+	            destroySkinShaders();
+#endif
+	            ((ObjPipeline*)skinGlobals.pipelines[PLATFORM_D3D9])->destroy();
+	            skinGlobals.pipelines[PLATFORM_D3D9] = nil;
+	        },
+	    });
 }
 
 ObjPipeline*

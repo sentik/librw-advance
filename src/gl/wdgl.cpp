@@ -16,6 +16,7 @@
 #include "../rwplugins.h"
 #include "../rw/plugin/object_registry.h"
 #include "rwwdgl.h"
+#include "../rw/plugin/driver_platform_registry.h"
 
 #ifdef RW_OPENGL
 #include "glad/glad.h"
@@ -26,24 +27,17 @@
 namespace rw {
 namespace wdgl {
 
-static void*
-driverOpen(void *o, int32, int32)
-{
-	engine->driver[PLATFORM_WDGL]->defaultPipeline = makeDefaultPipeline();
-	return o;
-}
-
-static void*
-driverClose(void *o, int32, int32)
-{
-	return o;
-}
-
 void
 registerPlatformPlugins(void)
 {
-	Driver::registerPlugin(PLATFORM_WDGL, 0, PLATFORM_WDGL,
-	                       driverOpen, driverClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_WDGL, fromRaw(PLATFORM_WDGL),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            engine->driver[PLATFORM_WDGL]->defaultPipeline = makeDefaultPipeline();
+	        },
+	    });
 }
 
 
@@ -717,26 +711,21 @@ if(sum){
 
 // Skin
 
-static void*
-skinOpen(void *o, int32, int32)
-{
-	skinGlobals.pipelines[PLATFORM_WDGL] = makeSkinPipeline();
-	return o;
-}
-
-static void*
-skinClose(void *o, int32, int32)
-{
-	((ObjPipeline*)skinGlobals.pipelines[PLATFORM_WDGL])->destroy();
-	skinGlobals.pipelines[PLATFORM_WDGL] = nil;
-	return o;
-}
-
 void
 initSkin(void)
 {
-	Driver::registerPlugin(PLATFORM_WDGL, 0, ID_SKIN,
-	                       skinOpen, skinClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_WDGL, fromRaw(ID_SKIN),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            skinGlobals.pipelines[PLATFORM_WDGL] = makeSkinPipeline();
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+	            ((ObjPipeline*)skinGlobals.pipelines[PLATFORM_WDGL])->destroy();
+	            skinGlobals.pipelines[PLATFORM_WDGL] = nil;
+	        },
+	    });
 }
 
 ObjPipeline*
@@ -753,26 +742,21 @@ makeSkinPipeline(void)
 
 // MatFX
 
-static void*
-matfxOpen(void *o, int32, int32)
-{
-	matFXGlobals.pipelines[PLATFORM_WDGL] = makeMatFXPipeline();
-	return o;
-}
-
-static void*
-matfxClose(void *o, int32, int32)
-{
-	((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_WDGL])->destroy();
-	matFXGlobals.pipelines[PLATFORM_WDGL] = nil;
-	return o;
-}
-
 void
 initMatFX(void)
 {
-	Driver::registerPlugin(PLATFORM_WDGL, 0, ID_MATFX,
-	                       matfxOpen, matfxClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_WDGL, fromRaw(ID_MATFX),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            matFXGlobals.pipelines[PLATFORM_WDGL] = makeMatFXPipeline();
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+	            ((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_WDGL])->destroy();
+	            matFXGlobals.pipelines[PLATFORM_WDGL] = nil;
+	        },
+	    });
 }
 
 ObjPipeline*

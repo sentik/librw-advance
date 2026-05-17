@@ -19,6 +19,7 @@
 #include "rwgl3plg.h"
 
 #include "rwgl3impl.h"
+#include "../rw/plugin/driver_platform_registry.h"
 
 namespace rw {
 namespace gl3 {
@@ -194,48 +195,6 @@ makeMatFXPipeline(void)
 	return pipe;
 }
 
-static void*
-matfxOpen(void *o, int32, int32)
-{
-	matFXGlobals.pipelines[PLATFORM_GL3] = makeMatFXPipeline();
-
-#include "shaders/matfx_gl.inc"
-	const char *vs[] = { shaderDecl, header_vert_src, matfx_env_vert_src, nil };
-	const char *vs_fullLight[] = { shaderDecl, "#define DIRECTIONALS\n#define POINTLIGHTS\n#define SPOTLIGHTS\n", header_vert_src, matfx_env_vert_src, nil };
-	const char *fs[] = { shaderDecl, header_frag_src, matfx_env_frag_src, nil };
-	const char *fs_noAT[] = { shaderDecl, "#define NO_ALPHATEST\n", header_frag_src, matfx_env_frag_src, nil };
-
-	envShader = Shader::create(vs, fs);
-	assert(envShader);
-	envShader_noAT = Shader::create(vs, fs_noAT);
-	assert(envShader_noAT);
-
-	envShader_fullLight = Shader::create(vs_fullLight, fs);
-	assert(envShader_fullLight);
-	envShader_fullLight_noAT = Shader::create(vs_fullLight, fs_noAT);
-	assert(envShader_fullLight_noAT);
-
-	return o;
-}
-
-static void*
-matfxClose(void *o, int32, int32)
-{
-	((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_GL3])->destroy();
-	matFXGlobals.pipelines[PLATFORM_GL3] = nil;
-
-	envShader->destroy();
-	envShader = nil;
-	envShader_noAT->destroy();
-	envShader_noAT = nil;
-	envShader_fullLight->destroy();
-	envShader_fullLight = nil;
-	envShader_fullLight_noAT->destroy();
-	envShader_fullLight_noAT = nil;
-
-	return o;
-}
-
 void
 initMatFX(void)
 {
@@ -244,8 +203,43 @@ initMatFX(void)
 	u_colorClamp = registerUniform("u_colorClamp", UNIFORM_VEC4);
 	u_envColor = registerUniform("u_envColor", UNIFORM_VEC4);
 
-	Driver::registerPlugin(PLATFORM_GL3, 0, ID_MATFX,
-	                       matfxOpen, matfxClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_GL3, fromRaw(ID_MATFX),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            matFXGlobals.pipelines[PLATFORM_GL3] = makeMatFXPipeline();
+
+#include "shaders/matfx_gl.inc"
+	            const char *vs[] = { shaderDecl, header_vert_src, matfx_env_vert_src, nil };
+	            const char *vs_fullLight[] = { shaderDecl, "#define DIRECTIONALS\n#define POINTLIGHTS\n#define SPOTLIGHTS\n", header_vert_src, matfx_env_vert_src, nil };
+	            const char *fs[] = { shaderDecl, header_frag_src, matfx_env_frag_src, nil };
+	            const char *fs_noAT[] = { shaderDecl, "#define NO_ALPHATEST\n", header_frag_src, matfx_env_frag_src, nil };
+
+	            envShader = Shader::create(vs, fs);
+	            assert(envShader);
+	            envShader_noAT = Shader::create(vs, fs_noAT);
+	            assert(envShader_noAT);
+
+	            envShader_fullLight = Shader::create(vs_fullLight, fs);
+	            assert(envShader_fullLight);
+	            envShader_fullLight_noAT = Shader::create(vs_fullLight, fs_noAT);
+	            assert(envShader_fullLight_noAT);
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+	            ((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_GL3])->destroy();
+	            matFXGlobals.pipelines[PLATFORM_GL3] = nil;
+
+	            envShader->destroy();
+	            envShader = nil;
+	            envShader_noAT->destroy();
+	            envShader_noAT = nil;
+	            envShader_fullLight->destroy();
+	            envShader_fullLight = nil;
+	            envShader_fullLight_noAT->destroy();
+	            envShader_fullLight_noAT = nil;
+	        },
+	    });
 }
 
 #else

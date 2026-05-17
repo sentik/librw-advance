@@ -45,9 +45,10 @@ public:
 
     // Базовый размер Driver-структуры. Все registerPlatformExtension
     // увеличивают этот размер.
-    [[nodiscard]] std::size_t driverSize(Platform p) const noexcept;
+    // p accepts legacy rw::Platform integer values implicitly.
+    [[nodiscard]] std::size_t driverSize(int p) const noexcept;
 
-    [[nodiscard]] bool isFrozen(Platform p) const noexcept;
+    [[nodiscard]] bool isFrozen(int p) const noexcept;
 
     void freezeAll() noexcept;
 
@@ -55,7 +56,7 @@ public:
     // Платформенно-специфичная storage (D3dRaster, GlRaster, XboxRaster, ...).
     template<PluginExtension Ext>
     [[nodiscard]] std::expected<std::ptrdiff_t, RegisterError>
-    registerPlatformStorage(Platform p, PluginId id,
+    registerPlatformStorage(int p, PluginId id,
                             PluginLifecycle lifecycle,
                             PluginStream stream = {},
                             std::string_view name = {},
@@ -73,26 +74,26 @@ public:
 
     // Регистрация без storage — для платформенных markers (skin/matfx init).
     [[nodiscard]] std::expected<void, RegisterError>
-    registerPlatformLifecycle(Platform p, PluginId id,
+    registerPlatformLifecycle(int p, PluginId id,
                               PluginLifecycle lifecycle,
                               std::string_view name = {},
                               std::source_location loc =
                                   std::source_location::current());
 
     // Lifecycle (вызывается при Driver init/teardown per platform).
-    void construct(Platform p, void* driver) const noexcept;
-    void destruct (Platform p, void* driver) const noexcept;
+    void construct(int p, void* driver) const noexcept;
+    void destruct (int p, void* driver) const noexcept;
 
     // Stream IO (например native raster data).
     [[nodiscard]] std::expected<void, StreamPluginError>
-    streamRead(Platform p, Stream& s, void* driver) const noexcept;
+    streamRead(int p, Stream& s, void* driver) const noexcept;
 
     [[nodiscard]] std::expected<void, StreamPluginError>
-    streamWrite(Platform p, Stream& s, const void* driver) const noexcept;
+    streamWrite(int p, Stream& s, const void* driver) const noexcept;
 
     // Introspection.
-    [[nodiscard]] PluginListCore* coreFor(Platform p) noexcept;
-    [[nodiscard]] const PluginListCore* coreFor(Platform p) const noexcept;
+    [[nodiscard]] PluginListCore* coreFor(int p) noexcept;
+    [[nodiscard]] const PluginListCore* coreFor(int p) const noexcept;
 
 private:
     DriverPlatformRegistry() noexcept;

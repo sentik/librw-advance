@@ -23,6 +23,7 @@
 #include "gl/rwwdgl.h"
 #include "rw/plugin/freeze.h"
 #include "rw/plugin/engine_module_registry.h"
+#include "rw/plugin/driver_platform_registry.h"
 
 #define PLUGIN_ID 0
 
@@ -39,7 +40,6 @@ namespace rw {
 Engine *engine;
 Engine::State Engine::state = Dead;
 MemoryFunctions Engine::memfuncs;
-PluginList Driver::s_plglist[NUM_PLATFORMS];
 
 const char *allocLocation;
 
@@ -211,9 +211,6 @@ Engine::init(MemoryFunctions *memfuncs)
 
 	PluginList::open();
 
-	for(uint i = 0; i < NUM_PLATFORMS; i++)
-		new (&Driver::s_plglist[i]) PluginList(sizeof(Driver));
-
 	// core plugin attach here
 	Frame::registerModule();
 	Image::registerModule();
@@ -242,6 +239,7 @@ Engine::init(MemoryFunctions *memfuncs)
 	d3d9::registerPlatformPlugins();
 	wdgl::registerPlatformPlugins();
 	gl3::registerPlatformPlugins();
+	rw::plugin::DriverPlatformRegistry::instance().freezeAll();
 
 	rw::plugin::freezeAll<
 	    Frame, Clump, Atomic, Geometry, Material,
@@ -289,7 +287,8 @@ Engine::open(EngineOpenParams *p)
 
 	engine->dummyDefaultPipeline = ObjPipeline::create();
 	for(uint i = 0; i < NUM_PLATFORMS; i++){
-		rw::engine->driver[i] = (Driver*)rwNew(Driver::s_plglist[i].size,
+		rw::engine->driver[i] = (Driver*)rwNew(
+			rw::plugin::DriverPlatformRegistry::instance().driverSize(i),
 			MEMDUR_GLOBAL);
 
 		engine->driver[i]->defaultPipeline = engine->dummyDefaultPipeline;
@@ -323,7 +322,7 @@ Engine::start(void)
 
 	rw::plugin::EngineModuleRegistry::instance().construct(engine);
 	for(uint i = 0; i < NUM_PLATFORMS; i++)
-		Driver::s_plglist[i].construct(rw::engine->driver[i]);
+		rw::plugin::DriverPlatformRegistry::instance().construct(i, rw::engine->driver[i]);
 
 	engine->device.system(DEVICEFINALIZE, nil, 0);
 
@@ -379,7 +378,7 @@ Engine::stop(void)
 	}
 
 	for(uint i = 0; i < NUM_PLATFORMS; i++)
-		Driver::s_plglist[i].destruct(rw::engine->driver[i]);
+		rw::plugin::DriverPlatformRegistry::instance().destruct(i, rw::engine->driver[i]);
 	rw::plugin::EngineModuleRegistry::instance().destruct(engine);
 
 	engine->device.system(DEVICETERM, nil, 0);

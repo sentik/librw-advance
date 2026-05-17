@@ -15,6 +15,7 @@
 #include "../rwimage.h"
 #include "../rwengine.h"
 #include "../rw/plugin/object_registry.h"
+#include "../rw/plugin/driver_platform_registry.h"
 #include "rwd3d.h"
 #include "rwd3d8.h"
 
@@ -26,33 +27,25 @@ namespace rw {
 namespace d3d8 {
 using namespace d3d;
 
-static void*
-driverOpen(void *o, int32, int32)
-{
-	engine->driver[PLATFORM_D3D8]->defaultPipeline = makeDefaultPipeline();
-
-	engine->driver[PLATFORM_D3D8]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
-	engine->driver[PLATFORM_D3D8]->rasterCreate       = rasterCreate;
-	engine->driver[PLATFORM_D3D8]->rasterLock         = rasterLock;
-	engine->driver[PLATFORM_D3D8]->rasterUnlock       = rasterUnlock;
-	engine->driver[PLATFORM_D3D8]->rasterNumLevels    = rasterNumLevels;
-	engine->driver[PLATFORM_D3D8]->imageFindRasterFormat = imageFindRasterFormat;
-	engine->driver[PLATFORM_D3D8]->rasterFromImage    = rasterFromImage;
-	engine->driver[PLATFORM_D3D8]->rasterToImage      = rasterToImage;
-	return o;
-}
-
-static void*
-driverClose(void *o, int32, int32)
-{
-	return o;
-}
-
 void
 registerPlatformPlugins(void)
 {
-	Driver::registerPlugin(PLATFORM_D3D8, 0, PLATFORM_D3D8,
-	                       driverOpen, driverClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_D3D8, fromRaw(PLATFORM_D3D8),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            engine->driver[PLATFORM_D3D8]->defaultPipeline = makeDefaultPipeline();
+	            engine->driver[PLATFORM_D3D8]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
+	            engine->driver[PLATFORM_D3D8]->rasterCreate       = rasterCreate;
+	            engine->driver[PLATFORM_D3D8]->rasterLock         = rasterLock;
+	            engine->driver[PLATFORM_D3D8]->rasterUnlock       = rasterUnlock;
+	            engine->driver[PLATFORM_D3D8]->rasterNumLevels    = rasterNumLevels;
+	            engine->driver[PLATFORM_D3D8]->imageFindRasterFormat = imageFindRasterFormat;
+	            engine->driver[PLATFORM_D3D8]->rasterFromImage    = rasterFromImage;
+	            engine->driver[PLATFORM_D3D8]->rasterToImage      = rasterToImage;
+	        },
+	    });
 	// shared between D3D8 and 9
 	if(!nativeRasterOffset)
 		registerNativeRaster();

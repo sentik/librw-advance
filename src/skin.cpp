@@ -16,6 +16,7 @@
 #include "rwengine.h"
 #include "rwplugins.h"
 #include "rw/plugin/object_registry.h"
+#include "rw/plugin/driver_platform_registry.h"
 #include "ps2/rwps2.h"
 #include "ps2/rwps2plg.h"
 #include "d3d/rwxbox.h"
@@ -344,34 +345,28 @@ copySkinAtm(void *dst, void *src, std::ptrdiff_t offset, int32)
 	return dst;
 }
 
-static void*
-skinOpen(void *o, int32, int32)
-{
-	// init dummy pipelines
-	skinGlobals.dummypipe = ObjPipeline::create();
-	skinGlobals.dummypipe->pluginID = ID_SKIN;
-	skinGlobals.dummypipe->pluginData = 1;
-	for(uint i = 0; i < nelem(skinGlobals.pipelines); i++)
-		skinGlobals.pipelines[i] = skinGlobals.dummypipe;
-	return o;
-}
-
-static void*
-skinClose(void *o, int32, int32)
-{
-	for(uint i = 0; i < nelem(skinGlobals.pipelines); i++)
-		if(skinGlobals.pipelines[i] == skinGlobals.dummypipe)
-			matFXGlobals.pipelines[i] = nil;
-	skinGlobals.dummypipe->destroy();
-	skinGlobals.dummypipe = nil;
-	return o;
-}
-
 void
 registerSkinPlugin(void)
 {
-	Driver::registerPlugin(PLATFORM_NULL, 0, ID_SKIN,
-	                       skinOpen, skinClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_NULL, fromRaw(ID_SKIN),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            skinGlobals.dummypipe = ObjPipeline::create();
+	            skinGlobals.dummypipe->pluginID = ID_SKIN;
+	            skinGlobals.dummypipe->pluginData = 1;
+	            for(uint i = 0; i < nelem(skinGlobals.pipelines); i++)
+	                skinGlobals.pipelines[i] = skinGlobals.dummypipe;
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+	            for(uint i = 0; i < nelem(skinGlobals.pipelines); i++)
+	                if(skinGlobals.pipelines[i] == skinGlobals.dummypipe)
+	                    matFXGlobals.pipelines[i] = nil;
+	            skinGlobals.dummypipe->destroy();
+	            skinGlobals.dummypipe = nil;
+	        },
+	    });
 	ps2::initSkin();
 	xbox::initSkin();
 	d3d8::initSkin();

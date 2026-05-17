@@ -87,12 +87,6 @@ struct Driver
 	bool32 (*rasterFromImage)(Raster*, Image*);
 	Image *(*rasterToImage)(Raster*);
 
-	static PluginList s_plglist[NUM_PLATFORMS];
-	static int32 registerPlugin(int32 platform, int32 size, uint32 id,
-	                            Constructor ctor, Destructor dtor){
-		return s_plglist[platform].registerPlugin(size, id,
-		                                          ctor, dtor, nil);
-	}
 };
 
 struct EngineOpenParams;

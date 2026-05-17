@@ -17,6 +17,7 @@
 #include "rwps2plg.h"
 
 #include "rwps2impl.h"
+#include "../rw/plugin/driver_platform_registry.h"
 
 #define PLUGIN_ID 2
 
@@ -27,36 +28,27 @@ bool adcHack = false;
 
 #define ALIGNPTR(p,a) ((uint8*)(((uintptr)(p)+a-1) & ~(uintptr)(a-1)))
 
-static void*
-driverOpen(void *o, int32, int32)
-{
-	engine->driver[PLATFORM_PS2]->defaultPipeline = makeDefaultPipeline();
-
-	engine->driver[PLATFORM_PS2]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
-	engine->driver[PLATFORM_PS2]->rasterCreate = rasterCreate;
-	engine->driver[PLATFORM_PS2]->rasterLock = rasterLock;
-	engine->driver[PLATFORM_PS2]->rasterUnlock = rasterUnlock;
-	engine->driver[PLATFORM_PS2]->rasterLockPalette = rasterLockPalette;
-	engine->driver[PLATFORM_PS2]->rasterUnlockPalette = rasterUnlockPalette;
-	engine->driver[PLATFORM_PS2]->rasterNumLevels = rasterNumLevels;
-	engine->driver[PLATFORM_PS2]->imageFindRasterFormat = imageFindRasterFormat;
-	engine->driver[PLATFORM_PS2]->rasterFromImage = rasterFromImage;
-	engine->driver[PLATFORM_PS2]->rasterToImage = rasterToImage;
-
-	return o;
-}
-
-static void*
-driverClose(void *o, int32, int32)
-{
-	return o;
-}
-
 void
 registerPlatformPlugins(void)
 {
-	Driver::registerPlugin(PLATFORM_PS2, 0, PLATFORM_PS2,
-	                       driverOpen, driverClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_PS2, fromRaw(PLATFORM_PS2),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            engine->driver[PLATFORM_PS2]->defaultPipeline = makeDefaultPipeline();
+	            engine->driver[PLATFORM_PS2]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
+	            engine->driver[PLATFORM_PS2]->rasterCreate = rasterCreate;
+	            engine->driver[PLATFORM_PS2]->rasterLock = rasterLock;
+	            engine->driver[PLATFORM_PS2]->rasterUnlock = rasterUnlock;
+	            engine->driver[PLATFORM_PS2]->rasterLockPalette = rasterLockPalette;
+	            engine->driver[PLATFORM_PS2]->rasterUnlockPalette = rasterUnlockPalette;
+	            engine->driver[PLATFORM_PS2]->rasterNumLevels = rasterNumLevels;
+	            engine->driver[PLATFORM_PS2]->imageFindRasterFormat = imageFindRasterFormat;
+	            engine->driver[PLATFORM_PS2]->rasterFromImage = rasterFromImage;
+	            engine->driver[PLATFORM_PS2]->rasterToImage = rasterToImage;
+	        },
+	    });
 
 	registerNativeRaster();
 }

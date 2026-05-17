@@ -23,9 +23,9 @@ DriverPlatformRegistry& DriverPlatformRegistry::instance() noexcept
     return r;
 }
 
-PluginListCore* DriverPlatformRegistry::coreFor(Platform p) noexcept
+PluginListCore* DriverPlatformRegistry::coreFor(int p) noexcept
 {
-    const auto idx = static_cast<std::size_t>(toRaw(p));
+    const auto idx = static_cast<std::size_t>(p);
     if(idx >= slots_.size())
         return nullptr;
     if(!slots_[idx])
@@ -33,21 +33,21 @@ PluginListCore* DriverPlatformRegistry::coreFor(Platform p) noexcept
     return slots_[idx].get();
 }
 
-const PluginListCore* DriverPlatformRegistry::coreFor(Platform p) const noexcept
+const PluginListCore* DriverPlatformRegistry::coreFor(int p) const noexcept
 {
-    const auto idx = static_cast<std::size_t>(toRaw(p));
+    const auto idx = static_cast<std::size_t>(p);
     if(idx >= slots_.size())
         return nullptr;
     return slots_[idx].get();
 }
 
-std::size_t DriverPlatformRegistry::driverSize(Platform p) const noexcept
+std::size_t DriverPlatformRegistry::driverSize(int p) const noexcept
 {
     const auto* core = coreFor(p);
     return core != nullptr ? core->objectSize() : baseDriverSize_;
 }
 
-bool DriverPlatformRegistry::isFrozen(Platform p) const noexcept
+bool DriverPlatformRegistry::isFrozen(int p) const noexcept
 {
     const auto* core = coreFor(p);
     return core != nullptr ? core->isFrozen() : false;
@@ -62,7 +62,7 @@ void DriverPlatformRegistry::freezeAll() noexcept
 }
 
 std::expected<void, RegisterError>
-DriverPlatformRegistry::registerPlatformLifecycle(Platform p, PluginId id,
+DriverPlatformRegistry::registerPlatformLifecycle(int p, PluginId id,
                                                   PluginLifecycle lifecycle,
                                                   std::string_view name,
                                                   std::source_location loc)
@@ -82,20 +82,20 @@ DriverPlatformRegistry::registerPlatformLifecycle(Platform p, PluginId id,
     return {};
 }
 
-void DriverPlatformRegistry::construct(Platform p, void* driver) const noexcept
+void DriverPlatformRegistry::construct(int p, void* driver) const noexcept
 {
     if(const auto* core = coreFor(p))
         core->construct(driver);
 }
 
-void DriverPlatformRegistry::destruct(Platform p, void* driver) const noexcept
+void DriverPlatformRegistry::destruct(int p, void* driver) const noexcept
 {
     if(const auto* core = coreFor(p))
         core->destruct(driver);
 }
 
 std::expected<void, StreamPluginError>
-DriverPlatformRegistry::streamRead(Platform p, Stream& s, void* driver) const noexcept
+DriverPlatformRegistry::streamRead(int p, Stream& s, void* driver) const noexcept
 {
     const auto* core = coreFor(p);
     if(core == nullptr)
@@ -104,7 +104,7 @@ DriverPlatformRegistry::streamRead(Platform p, Stream& s, void* driver) const no
 }
 
 std::expected<void, StreamPluginError>
-DriverPlatformRegistry::streamWrite(Platform p, Stream& s, const void* driver) const noexcept
+DriverPlatformRegistry::streamWrite(int p, Stream& s, const void* driver) const noexcept
 {
     const auto* core = coreFor(p);
     if(core == nullptr)

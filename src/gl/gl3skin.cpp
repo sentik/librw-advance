@@ -20,6 +20,7 @@
 #include "rwgl3plg.h"
 
 #include "rwgl3impl.h"
+#include "../rw/plugin/driver_platform_registry.h"
 
 namespace rw {
 namespace gl3 {
@@ -293,56 +294,49 @@ skinRenderCB(Atomic *atomic, InstanceDataHeader *header)
 	teardownVertexInput(header);
 }
 
-static void*
-skinOpen(void *o, int32, int32)
-{
-	skinGlobals.pipelines[PLATFORM_GL3] = makeSkinPipeline();
-
-#include "shaders/simple_fs_gl.inc"
-#include "shaders/skin_gl.inc"
-	const char *vs[] = { shaderDecl, header_vert_src, skin_vert_src, nil };
-	const char *vs_fullLight[] = { shaderDecl, "#define DIRECTIONALS\n#define POINTLIGHTS\n#define SPOTLIGHTS\n", header_vert_src, skin_vert_src, nil };
-	const char *fs[] = { shaderDecl, header_frag_src, simple_frag_src, nil };
-	const char *fs_noAT[] = { shaderDecl, "#define NO_ALPHATEST\n", header_frag_src, simple_frag_src, nil };
-
-	skinShader = Shader::create(vs, fs);
-	assert(skinShader);
-	skinShader_noAT = Shader::create(vs, fs_noAT);
-	assert(skinShader_noAT);
-
-	skinShader_fullLight = Shader::create(vs_fullLight, fs);
-	assert(skinShader_fullLight);
-	skinShader_fullLight_noAT = Shader::create(vs_fullLight, fs_noAT);
-	assert(skinShader_fullLight_noAT);
-
-	return o;
-}
-
-static void*
-skinClose(void *o, int32, int32)
-{
-	((ObjPipeline*)skinGlobals.pipelines[PLATFORM_GL3])->destroy();
-	skinGlobals.pipelines[PLATFORM_GL3] = nil;
-
-	skinShader->destroy();
-	skinShader = nil;
-	skinShader_noAT->destroy();
-	skinShader_noAT = nil;
-	skinShader_fullLight->destroy();
-	skinShader_fullLight = nil;
-	skinShader_fullLight_noAT->destroy();
-	skinShader_fullLight_noAT = nil;
-
-	return o;
-}
-
 void
 initSkin(void)
 {
 	u_boneMatrices = registerUniform("u_boneMatrices", UNIFORM_MAT4, 64);
 
-	Driver::registerPlugin(PLATFORM_GL3, 0, ID_SKIN,
-	                       skinOpen, skinClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_GL3, fromRaw(ID_SKIN),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            skinGlobals.pipelines[PLATFORM_GL3] = makeSkinPipeline();
+
+#include "shaders/simple_fs_gl.inc"
+#include "shaders/skin_gl.inc"
+	            const char *vs[] = { shaderDecl, header_vert_src, skin_vert_src, nil };
+	            const char *vs_fullLight[] = { shaderDecl, "#define DIRECTIONALS\n#define POINTLIGHTS\n#define SPOTLIGHTS\n", header_vert_src, skin_vert_src, nil };
+	            const char *fs[] = { shaderDecl, header_frag_src, simple_frag_src, nil };
+	            const char *fs_noAT[] = { shaderDecl, "#define NO_ALPHATEST\n", header_frag_src, simple_frag_src, nil };
+
+	            skinShader = Shader::create(vs, fs);
+	            assert(skinShader);
+	            skinShader_noAT = Shader::create(vs, fs_noAT);
+	            assert(skinShader_noAT);
+
+	            skinShader_fullLight = Shader::create(vs_fullLight, fs);
+	            assert(skinShader_fullLight);
+	            skinShader_fullLight_noAT = Shader::create(vs_fullLight, fs_noAT);
+	            assert(skinShader_fullLight_noAT);
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+	            ((ObjPipeline*)skinGlobals.pipelines[PLATFORM_GL3])->destroy();
+	            skinGlobals.pipelines[PLATFORM_GL3] = nil;
+
+	            skinShader->destroy();
+	            skinShader = nil;
+	            skinShader_noAT->destroy();
+	            skinShader_noAT = nil;
+	            skinShader_fullLight->destroy();
+	            skinShader_fullLight = nil;
+	            skinShader_fullLight_noAT->destroy();
+	            skinShader_fullLight_noAT = nil;
+	        },
+	    });
 }
 
 ObjPipeline*

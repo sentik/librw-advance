@@ -14,30 +14,26 @@
 #include "../rwengine.h"
 #include "../rwplugins.h"
 #include "rwxbox.h"
+#include "../rw/plugin/driver_platform_registry.h"
 
 namespace rw {
 namespace xbox {
 
-static void*
-matfxOpen(void *o, int32, int32)
-{
-	matFXGlobals.pipelines[PLATFORM_XBOX] = makeMatFXPipeline();
-	return o;
-}
-
-static void*
-matfxClose(void *o, int32, int32)
-{
-	((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_XBOX])->destroy();
-	matFXGlobals.pipelines[PLATFORM_XBOX] = nil;
-	return o;
-}
-
 void
 initMatFX(void)
 {
-	Driver::registerPlugin(PLATFORM_XBOX, 0, ID_MATFX,
-	                       matfxOpen, matfxClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_XBOX, fromRaw(ID_MATFX),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            matFXGlobals.pipelines[PLATFORM_XBOX] = makeMatFXPipeline();
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+	            ((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_XBOX])->destroy();
+	            matFXGlobals.pipelines[PLATFORM_XBOX] = nil;
+	        },
+	    });
 }
 
 ObjPipeline*

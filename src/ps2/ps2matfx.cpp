@@ -15,33 +15,29 @@
 #include "../rwplugins.h"
 #include "rwps2.h"
 #include "rwps2plg.h"
+#include "../rw/plugin/driver_platform_registry.h"
 
 #define PLUGIN_ID ID_MATFX
 
 namespace rw {
 namespace ps2 {
 
-static void*
-matfxOpen(void *o, int32, int32)
-{
-	matFXGlobals.pipelines[PLATFORM_PS2] = makeMatFXPipeline();
-	return o;
-}
-
-static void*
-matfxClose(void *o, int32, int32)
-{
-	((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_PS2])->groupPipeline->destroy();
-	((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_PS2])->destroy();
-	matFXGlobals.pipelines[PLATFORM_PS2] = nil;
-	return o;
-}
-
 void
 initMatFX(void)
 {
-	Driver::registerPlugin(PLATFORM_PS2, 0, ID_MATFX,
-	                       matfxOpen, matfxClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_PS2, fromRaw(ID_MATFX),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            matFXGlobals.pipelines[PLATFORM_PS2] = makeMatFXPipeline();
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+	            ((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_PS2])->groupPipeline->destroy();
+	            ((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_PS2])->destroy();
+	            matFXGlobals.pipelines[PLATFORM_PS2] = nil;
+	        },
+	    });
 }
 
 ObjPipeline*

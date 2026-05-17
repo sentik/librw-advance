@@ -15,31 +15,27 @@
 #include "../rwplugins.h"
 #include "rwd3d.h"
 #include "rwd3d8.h"
+#include "../rw/plugin/driver_platform_registry.h"
 
 namespace rw {
 namespace d3d8 {
 using namespace d3d;
 
-static void*
-matfxOpen(void *o, int32, int32)
-{
-	matFXGlobals.pipelines[PLATFORM_D3D8] = makeMatFXPipeline();
-	return o;
-}
-
-static void*
-matfxClose(void *o, int32, int32)
-{
-	((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_D3D8])->destroy();
-	matFXGlobals.pipelines[PLATFORM_D3D8] = nil;
-	return o;
-}
-
 void
 initMatFX(void)
 {
-	Driver::registerPlugin(PLATFORM_D3D8, 0, ID_MATFX,
-	                       matfxOpen, matfxClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_D3D8, fromRaw(ID_MATFX),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            matFXGlobals.pipelines[PLATFORM_D3D8] = makeMatFXPipeline();
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+	            ((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_D3D8])->destroy();
+	            matFXGlobals.pipelines[PLATFORM_D3D8] = nil;
+	        },
+	    });
 }
 
 ObjPipeline*

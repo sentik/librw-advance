@@ -14,6 +14,7 @@
 #include "../rwengine.h"
 #include "../rwplugins.h"
 #include "rwxbox.h"
+#include "../rw/plugin/driver_platform_registry.h"
 
 #define PLUGIN_ID ID_SKIN
 
@@ -217,26 +218,21 @@ skinUninstanceCB(Geometry *geo, InstanceDataHeader *header)
 	rwFree(natskin);
 }
 
-static void*
-skinOpen(void *o, int32, int32)
-{
-	skinGlobals.pipelines[PLATFORM_XBOX] = makeSkinPipeline();
-	return o;
-}
-
-static void*
-skinClose(void *o, int32, int32)
-{
-	((ObjPipeline*)skinGlobals.pipelines[PLATFORM_XBOX])->destroy();
-	skinGlobals.pipelines[PLATFORM_XBOX] = nil;
-	return o;
-}
-
 void
 initSkin(void)
 {
-	Driver::registerPlugin(PLATFORM_XBOX, 0, ID_SKIN,
-	                       skinOpen, skinClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_XBOX, fromRaw(ID_SKIN),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            skinGlobals.pipelines[PLATFORM_XBOX] = makeSkinPipeline();
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+	            ((ObjPipeline*)skinGlobals.pipelines[PLATFORM_XBOX])->destroy();
+	            skinGlobals.pipelines[PLATFORM_XBOX] = nil;
+	        },
+	    });
 }
 
 ObjPipeline*

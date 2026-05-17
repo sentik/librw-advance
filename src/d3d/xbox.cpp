@@ -14,6 +14,7 @@
 #include "../rwimage.h"
 #include "../rwengine.h"
 #include "../rw/plugin/object_registry.h"
+#include "../rw/plugin/driver_platform_registry.h"
 #include "rwxbox.h"
 
 #include "rwxboximpl.h"
@@ -23,32 +24,23 @@
 namespace rw {
 namespace xbox {
 
-static void*
-driverOpen(void *o, int32, int32)
-{
-	engine->driver[PLATFORM_XBOX]->defaultPipeline = makeDefaultPipeline();
-
-	engine->driver[PLATFORM_XBOX]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
-	engine->driver[PLATFORM_XBOX]->rasterCreate = rasterCreate;
-	engine->driver[PLATFORM_XBOX]->rasterLock = rasterLock;
-	engine->driver[PLATFORM_XBOX]->rasterUnlock = rasterUnlock;
-	engine->driver[PLATFORM_XBOX]->rasterNumLevels = rasterNumLevels;
-	engine->driver[PLATFORM_XBOX]->rasterToImage = rasterToImage;
-
-	return o;
-}
-
-static void*
-driverClose(void *o, int32, int32)
-{
-	return o;
-}
-
 void
 registerPlatformPlugins(void)
 {
-	Driver::registerPlugin(PLATFORM_XBOX, 0, PLATFORM_XBOX,
-	                       driverOpen, driverClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_XBOX, fromRaw(PLATFORM_XBOX),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            engine->driver[PLATFORM_XBOX]->defaultPipeline = makeDefaultPipeline();
+	            engine->driver[PLATFORM_XBOX]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
+	            engine->driver[PLATFORM_XBOX]->rasterCreate = rasterCreate;
+	            engine->driver[PLATFORM_XBOX]->rasterLock = rasterLock;
+	            engine->driver[PLATFORM_XBOX]->rasterUnlock = rasterUnlock;
+	            engine->driver[PLATFORM_XBOX]->rasterNumLevels = rasterNumLevels;
+	            engine->driver[PLATFORM_XBOX]->rasterToImage = rasterToImage;
+	        },
+	    });
 	registerNativeRaster();
 }
 

@@ -18,41 +18,34 @@
 #include "rwgl3shader.h"
 
 #include "rwgl3impl.h"
+#include "../rw/plugin/driver_platform_registry.h"
 
 namespace rw {
 namespace gl3 {
 
 // TODO: make some of these things platform-independent
 
-static void*
-driverOpen(void *o, int32, int32)
-{
-#ifdef RW_OPENGL
-	engine->driver[PLATFORM_GL3]->defaultPipeline = makeDefaultPipeline();
-#endif
-	engine->driver[PLATFORM_GL3]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
-	engine->driver[PLATFORM_GL3]->rasterCreate       = rasterCreate;
-	engine->driver[PLATFORM_GL3]->rasterLock         = rasterLock;
-	engine->driver[PLATFORM_GL3]->rasterUnlock       = rasterUnlock;
-	engine->driver[PLATFORM_GL3]->rasterNumLevels    = rasterNumLevels;
-	engine->driver[PLATFORM_GL3]->imageFindRasterFormat = imageFindRasterFormat;
-	engine->driver[PLATFORM_GL3]->rasterFromImage    = rasterFromImage;
-	engine->driver[PLATFORM_GL3]->rasterToImage      = rasterToImage;
-
-	return o;
-}
-
-static void*
-driverClose(void *o, int32, int32)
-{
-	return o;
-}
-
 void
 registerPlatformPlugins(void)
 {
-	Driver::registerPlugin(PLATFORM_GL3, 0, PLATFORM_GL3,
-	                       driverOpen, driverClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_GL3, fromRaw(PLATFORM_GL3),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+#ifdef RW_OPENGL
+	            engine->driver[PLATFORM_GL3]->defaultPipeline = makeDefaultPipeline();
+#endif
+	            engine->driver[PLATFORM_GL3]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
+	            engine->driver[PLATFORM_GL3]->rasterCreate       = rasterCreate;
+	            engine->driver[PLATFORM_GL3]->rasterLock         = rasterLock;
+	            engine->driver[PLATFORM_GL3]->rasterUnlock       = rasterUnlock;
+	            engine->driver[PLATFORM_GL3]->rasterNumLevels    = rasterNumLevels;
+	            engine->driver[PLATFORM_GL3]->imageFindRasterFormat = imageFindRasterFormat;
+	            engine->driver[PLATFORM_GL3]->rasterFromImage    = rasterFromImage;
+	            engine->driver[PLATFORM_GL3]->rasterToImage      = rasterToImage;
+	        },
+	    });
 	registerNativeRaster();
 }
 

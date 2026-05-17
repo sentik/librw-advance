@@ -14,6 +14,7 @@
 #include "../rwraster.h"
 #include "../rwengine.h"
 #include "../rw/plugin/object_registry.h"
+#include "../rw/plugin/driver_platform_registry.h"
 #include "rwd3d.h"
 #include "rwd3d9.h"
 
@@ -33,39 +34,33 @@ static VertexElement _d3ddec_end = {0xFF,0,D3DDECLTYPE_UNUSED,0,0,0};
 
 #define NUMDECLELT 12
 
-static void*
-driverOpen(void *o, int32, int32)
-{
-#ifdef RW_D3D9
-	createDefaultShaders();
-#endif
-	engine->driver[PLATFORM_D3D9]->defaultPipeline = makeDefaultPipeline();
-
-	engine->driver[PLATFORM_D3D9]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
-	engine->driver[PLATFORM_D3D9]->rasterCreate       = rasterCreate;
-	engine->driver[PLATFORM_D3D9]->rasterLock         = rasterLock;
-	engine->driver[PLATFORM_D3D9]->rasterUnlock       = rasterUnlock;
-	engine->driver[PLATFORM_D3D9]->rasterNumLevels    = rasterNumLevels;
-	engine->driver[PLATFORM_D3D9]->imageFindRasterFormat = imageFindRasterFormat;
-	engine->driver[PLATFORM_D3D9]->rasterFromImage    = rasterFromImage;
-	engine->driver[PLATFORM_D3D9]->rasterToImage      = rasterToImage;
-	return o;
-}
-
-static void*
-driverClose(void *o, int32, int32)
-{
-#ifdef RW_D3D9
-	destroyDefaultShaders();
-#endif
-	return o;
-}
-
 void
 registerPlatformPlugins(void)
 {
-	Driver::registerPlugin(PLATFORM_D3D9, 0, PLATFORM_D3D9,
-	                       driverOpen, driverClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_D3D9, fromRaw(PLATFORM_D3D9),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+#ifdef RW_D3D9
+	            createDefaultShaders();
+#endif
+	            engine->driver[PLATFORM_D3D9]->defaultPipeline = makeDefaultPipeline();
+	            engine->driver[PLATFORM_D3D9]->rasterNativeOffset = static_cast<int32>(nativeRasterOffset.value());
+	            engine->driver[PLATFORM_D3D9]->rasterCreate       = rasterCreate;
+	            engine->driver[PLATFORM_D3D9]->rasterLock         = rasterLock;
+	            engine->driver[PLATFORM_D3D9]->rasterUnlock       = rasterUnlock;
+	            engine->driver[PLATFORM_D3D9]->rasterNumLevels    = rasterNumLevels;
+	            engine->driver[PLATFORM_D3D9]->imageFindRasterFormat = imageFindRasterFormat;
+	            engine->driver[PLATFORM_D3D9]->rasterFromImage    = rasterFromImage;
+	            engine->driver[PLATFORM_D3D9]->rasterToImage      = rasterToImage;
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+#ifdef RW_D3D9
+	            destroyDefaultShaders();
+#endif
+	        },
+	    });
 	// shared between D3D8 and 9
 	if(!nativeRasterOffset)
 		registerNativeRaster();

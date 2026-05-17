@@ -17,6 +17,7 @@
 #include "../rwplugins.h"
 #include "rwd3d.h"
 #include "rwd3d9.h"
+#include "../rw/plugin/driver_platform_registry.h"
 
 namespace rw {
 namespace d3d9 {
@@ -269,34 +270,27 @@ destroyMatFXShaders(void)
 
 #endif
 
-static void*
-matfxOpen(void *o, int32, int32)
-{
-#ifdef RW_D3D9
-	createMatFXShaders();
-#endif
-
-	matFXGlobals.pipelines[PLATFORM_D3D9] = makeMatFXPipeline();
-	return o;
-}
-
-static void*
-matfxClose(void *o, int32, int32)
-{
-#ifdef RW_D3D9
-	destroyMatFXShaders();
-#endif
-
-	((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_D3D9])->destroy();
-	matFXGlobals.pipelines[PLATFORM_D3D9] = nil;
-	return o;
-}
-
 void
 initMatFX(void)
 {
-	Driver::registerPlugin(PLATFORM_D3D9, 0, ID_MATFX,
-	                       matfxOpen, matfxClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_D3D9, fromRaw(ID_MATFX),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+#ifdef RW_D3D9
+	            createMatFXShaders();
+#endif
+	            matFXGlobals.pipelines[PLATFORM_D3D9] = makeMatFXPipeline();
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+#ifdef RW_D3D9
+	            destroyMatFXShaders();
+#endif
+	            ((ObjPipeline*)matFXGlobals.pipelines[PLATFORM_D3D9])->destroy();
+	            matFXGlobals.pipelines[PLATFORM_D3D9] = nil;
+	        },
+	    });
 }
 
 ObjPipeline*

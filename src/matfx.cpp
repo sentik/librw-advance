@@ -14,6 +14,7 @@
 #include "rwanim.h"
 #include "rwplugins.h"
 #include "rw/plugin/object_registry.h"
+#include "rw/plugin/driver_platform_registry.h"
 #include "ps2/rwps2.h"
 #include "ps2/rwps2plg.h"
 #include "d3d/rwxbox.h"
@@ -588,34 +589,28 @@ MatFX::getEffects(Atomic *atomic)
 	return plugin::extension<Atomic, int32>(*atomic, matFXGlobals.atomicOffset);
 }
 
-static void*
-matfxOpen(void *o, int32, int32)
-{
-	// init dummy pipelines
-	matFXGlobals.dummypipe = ObjPipeline::create();
-	matFXGlobals.dummypipe->pluginID = 0; //ID_MATFX;
-	matFXGlobals.dummypipe->pluginData = 0;
-	for(uint i = 0; i < nelem(matFXGlobals.pipelines); i++)
-		matFXGlobals.pipelines[i] = matFXGlobals.dummypipe;
-	return o;
-}
-
-static void*
-matfxClose(void *o, int32, int32)
-{
-	for(uint i = 0; i < nelem(matFXGlobals.pipelines); i++)
-		if(matFXGlobals.pipelines[i] == matFXGlobals.dummypipe)
-			matFXGlobals.pipelines[i] = nil;
-	matFXGlobals.dummypipe->destroy();
-	matFXGlobals.dummypipe = nil;
-	return o;
-}
-
 void
 registerMatFXPlugin(void)
 {
-	Driver::registerPlugin(PLATFORM_NULL, 0, ID_MATFX,
-	                       matfxOpen, matfxClose);
+	using namespace rw::plugin;
+	(void)DriverPlatformRegistry::instance().registerPlatformLifecycle(
+	    PLATFORM_NULL, fromRaw(ID_MATFX),
+	    PluginLifecycle{
+	        .construct = [](void*, std::ptrdiff_t) {
+	            matFXGlobals.dummypipe = ObjPipeline::create();
+	            matFXGlobals.dummypipe->pluginID = 0;
+	            matFXGlobals.dummypipe->pluginData = 0;
+	            for(uint i = 0; i < nelem(matFXGlobals.pipelines); i++)
+	                matFXGlobals.pipelines[i] = matFXGlobals.dummypipe;
+	        },
+	        .destruct = [](void*, std::ptrdiff_t) {
+	            for(uint i = 0; i < nelem(matFXGlobals.pipelines); i++)
+	                if(matFXGlobals.pipelines[i] == matFXGlobals.dummypipe)
+	                    matFXGlobals.pipelines[i] = nil;
+	            matFXGlobals.dummypipe->destroy();
+	            matFXGlobals.dummypipe = nil;
+	        },
+	    });
 	ps2::initMatFX();
 	xbox::initMatFX();
 	d3d8::initMatFX();

@@ -62,6 +62,12 @@ enum class Platform : std::uint8_t {
     return static_cast<std::uint8_t>(p);
 }
 
+// Converts a legacy rw::Platform integer value to the typed Platform enum.
+[[nodiscard]] constexpr Platform fromPlatformInt(std::uint8_t raw) noexcept
+{
+    return static_cast<Platform>(raw);
+}
+
 // Ошибки регистрации плагина.
 enum class RegisterError : std::uint8_t {
     duplicateId,            // плагин с этим id уже зарегистрирован
