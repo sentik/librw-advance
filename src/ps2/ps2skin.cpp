@@ -70,7 +70,7 @@ makeSkinPipeline(void)
 }
 
 Stream*
-readNativeSkin(Stream *stream, int32, void *object, int32 offset)
+readNativeSkin(Stream *stream, int32, void *object, std::ptrdiff_t offset)
 {
 	uint8 header[4];
 	Geometry *geometry = (Geometry*)object;
@@ -121,7 +121,7 @@ readNativeSkin(Stream *stream, int32, void *object, int32 offset)
 }
 
 Stream*
-writeNativeSkin(Stream *stream, int32 len, void *object, int32 offset)
+writeNativeSkin(Stream *stream, int32 len, void *object, std::ptrdiff_t offset)
 {
 	uint8 header[4];
 
@@ -154,7 +154,7 @@ writeNativeSkin(Stream *stream, int32 len, void *object, int32 offset)
 }
 
 int32
-getSizeNativeSkin(void *object, int32 offset)
+getSizeNativeSkin(void *object, std::ptrdiff_t offset)
 {
 	Skin *skin = *(Skin**)((uint8*)object + offset);
 	if(skin == nil)

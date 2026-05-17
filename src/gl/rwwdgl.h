@@ -62,9 +62,9 @@ ObjPipeline *makeDefaultPipeline(void);
 // Skin plugin
 
 void initSkin(void);
-Stream *readNativeSkin(Stream *stream, int32, void *object, int32 offset);
-Stream *writeNativeSkin(Stream *stream, int32 len, void *object, int32 offset);
-int32 getSizeNativeSkin(void *object, int32 offset);
+Stream *readNativeSkin(Stream *stream, int32, void *object, std::ptrdiff_t offset);
+Stream *writeNativeSkin(Stream *stream, int32 len, void *object, std::ptrdiff_t offset);
+int32 getSizeNativeSkin(void *object, std::ptrdiff_t offset);
 
 ObjPipeline *makeSkinPipeline(void);
 
@@ -81,7 +81,10 @@ struct Texture : rw::Texture
 	void bind(int n);
 };
 
-extern int32 nativeRasterOffset;
+#ifdef RW_OPENGL
+struct GlRaster;
+extern plugin::PluginOffset<Raster, GlRaster> nativeRasterOffset;
+#endif
 void registerNativeRaster(void);
 
 }

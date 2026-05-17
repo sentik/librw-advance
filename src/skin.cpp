@@ -127,11 +127,11 @@ readSkin(Stream *stream, int32 len, void *object, std::ptrdiff_t offset, int32)
 	if(geometry->instData){
 		// TODO: function pointers
 		if(geometry->instData->platform == PLATFORM_PS2)
-			return ps2::readNativeSkin(stream, len, object, static_cast<int32>(offset));
+			return ps2::readNativeSkin(stream, len, object, offset);
 		else if(geometry->instData->platform == PLATFORM_WDGL)
-			return wdgl::readNativeSkin(stream, len, object, static_cast<int32>(offset));
+			return wdgl::readNativeSkin(stream, len, object, offset);
 		else if(geometry->instData->platform == PLATFORM_XBOX)
-			return xbox::readNativeSkin(stream, len, object, static_cast<int32>(offset));
+			return xbox::readNativeSkin(stream, len, object, offset);
 		else{
 			assert(0 && "unsupported native skin platform");
 			return nil;
@@ -186,11 +186,11 @@ writeSkin(Stream *stream, int32 len, void *object, std::ptrdiff_t offset, int32)
 
 	if(geometry->instData){
 		if(geometry->instData->platform == PLATFORM_PS2)
-			return ps2::writeNativeSkin(stream, len, object, static_cast<int32>(offset));
+			return ps2::writeNativeSkin(stream, len, object, offset);
 		else if(geometry->instData->platform == PLATFORM_WDGL)
-			return wdgl::writeNativeSkin(stream, len, object, static_cast<int32>(offset));
+			return wdgl::writeNativeSkin(stream, len, object, offset);
 		else if(geometry->instData->platform == PLATFORM_XBOX)
-			return xbox::writeNativeSkin(stream, len, object, static_cast<int32>(offset));
+			return xbox::writeNativeSkin(stream, len, object, offset);
 		else{
 			assert(0 && "unsupported native skin platform");
 			return nil;
@@ -232,11 +232,11 @@ getSizeSkin(void *object, std::ptrdiff_t offset, int32)
 
 	if(geometry->instData){
 		if(geometry->instData->platform == PLATFORM_PS2)
-			return ps2::getSizeNativeSkin(object, static_cast<int32>(offset));
+			return ps2::getSizeNativeSkin(object, offset);
 		if(geometry->instData->platform == PLATFORM_WDGL)
-			return wdgl::getSizeNativeSkin(object, static_cast<int32>(offset));
+			return wdgl::getSizeNativeSkin(object, offset);
 		if(geometry->instData->platform == PLATFORM_XBOX)
-			return xbox::getSizeNativeSkin(object, static_cast<int32>(offset));
+			return xbox::getSizeNativeSkin(object, offset);
 		if(geometry->instData->platform == PLATFORM_D3D8)
 			return -1;
 		if(geometry->instData->platform == PLATFORM_D3D9)

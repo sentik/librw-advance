@@ -31,7 +31,7 @@ struct NativeSkin
 };
 
 Stream*
-readNativeSkin(Stream *stream, int32, void *object, int32 offset)
+readNativeSkin(Stream *stream, int32, void *object, std::ptrdiff_t offset)
 {
 	ASSERTLITTLE;
 	Geometry *geometry = (Geometry*)object;
@@ -73,7 +73,7 @@ readNativeSkin(Stream *stream, int32, void *object, int32 offset)
 }
 
 Stream*
-writeNativeSkin(Stream *stream, int32 len, void *object, int32 offset)
+writeNativeSkin(Stream *stream, int32 len, void *object, std::ptrdiff_t offset)
 {
 	ASSERTLITTLE;
 	Geometry *geometry = (Geometry*)object;
@@ -100,7 +100,7 @@ writeNativeSkin(Stream *stream, int32 len, void *object, int32 offset)
 }
 
 int32
-getSizeNativeSkin(void *object, int32 offset)
+getSizeNativeSkin(void *object, std::ptrdiff_t offset)
 {
 	Geometry *geometry = (Geometry*)object;
 	Skin *skin = *(Skin**)((uint8*)object + offset);

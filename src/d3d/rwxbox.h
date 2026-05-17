@@ -58,9 +58,9 @@ void defaultUninstanceCB(Geometry *geo, InstanceDataHeader *header);
 
 // Skin plugin
 
-Stream *readNativeSkin(Stream *stream, int32, void *object, int32 offset);
-Stream *writeNativeSkin(Stream *stream, int32 len, void *object, int32 offset);
-int32 getSizeNativeSkin(void *object, int32 offset);
+Stream *readNativeSkin(Stream *stream, int32, void *object, std::ptrdiff_t offset);
+Stream *writeNativeSkin(Stream *stream, int32 len, void *object, std::ptrdiff_t offset);
+int32 getSizeNativeSkin(void *object, std::ptrdiff_t offset);
 
 void initSkin(void);
 ObjPipeline *makeSkinPipeline(void);

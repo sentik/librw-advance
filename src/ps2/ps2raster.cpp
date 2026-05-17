@@ -1863,7 +1863,7 @@ copyNativeRaster(void *dst, void *src, std::ptrdiff_t offset, int32)
 }
 
 static Stream*
-readMipmap(Stream *stream, int32, void *object, int32 offset, int32)
+readMipmap(Stream *stream, int32, void *object, std::ptrdiff_t offset, int32)
 {
 	uint16 val = stream->readI32();
 	Texture *tex = (Texture*)object;
@@ -1875,7 +1875,7 @@ readMipmap(Stream *stream, int32, void *object, int32 offset, int32)
 }
 
 static Stream*
-writeMipmap(Stream *stream, int32, void *object, int32 offset, int32)
+writeMipmap(Stream *stream, int32, void *object, std::ptrdiff_t offset, int32)
 {
 	Texture *tex = (Texture*)object;
 	if(tex->raster){

@@ -564,7 +564,7 @@ makeDefaultPipeline(void)
 // Skin
 
 Stream*
-readNativeSkin(Stream *stream, int32, void *object, int32 offset)
+readNativeSkin(Stream *stream, int32, void *object, std::ptrdiff_t offset)
 {
 	Geometry *geometry = (Geometry*)object;
 	uint32 platform;
@@ -587,7 +587,7 @@ readNativeSkin(Stream *stream, int32, void *object, int32 offset)
 }
 
 Stream*
-writeNativeSkin(Stream *stream, int32 len, void *object, int32 offset)
+writeNativeSkin(Stream *stream, int32 len, void *object, std::ptrdiff_t offset)
 {
 	writeChunkHeader(stream, ID_STRUCT, len-12);
 	stream->writeU32(PLATFORM_GL);
@@ -598,7 +598,7 @@ writeNativeSkin(Stream *stream, int32 len, void *object, int32 offset)
 }
 
 int32
-getSizeNativeSkin(void *object, int32 offset)
+getSizeNativeSkin(void *object, std::ptrdiff_t offset)
 {
 	Skin *skin = *(Skin**)((uint8*)object + offset);
 	if(skin == nil)
@@ -770,35 +770,12 @@ makeMatFXPipeline(void)
 
 // Raster
 
-int32 nativeRasterOffset;
-
 #ifdef RW_OPENGL
 struct GlRaster {
 	GLuint id;
 };
 
-static void*
-createNativeRaster(void *object, std::ptrdiff_t offset, int32)
-{
-	GlRaster *raster = (GlRaster*)((uint8*)object + offset);
-	raster->id = 0;
-	return object;
-}
-
-static void*
-destroyNativeRaster(void *object, std::ptrdiff_t offset, int32)
-{
-	// TODO:
-	return object;
-}
-
-static void*
-copyNativeRaster(void *dst, void *, std::ptrdiff_t offset, int32)
-{
-	GlRaster *raster = (GlRaster*)((uint8*)dst + offset);
-	raster->id = 0;
-	return dst;
-}
+plugin::PluginOffset<Raster, GlRaster> nativeRasterOffset;
 
 void
 registerNativeRaster(void)
@@ -808,19 +785,16 @@ registerNativeRaster(void)
 	auto result = reg.registerExtension<GlRaster>(fromRaw(ID_RASTERWDGL),
 		PluginLifecycle{
 			.construct = [](void* o, std::ptrdiff_t off) {
-				createNativeRaster(o, off, 0);
+				plugin::extensionPtr<Raster, GlRaster>(o, off)->id = 0;
 			},
-			.destruct = [](void* o, std::ptrdiff_t off) {
-				destroyNativeRaster(o, off, 0);
-			},
-			.copy = [](void* d, const void* s, std::ptrdiff_t off) {
-				copyNativeRaster(d, const_cast<void*>(s), off, 0);
+			.copy = [](void* d, const void*, std::ptrdiff_t off) {
+				plugin::extensionPtr<Raster, GlRaster>(d, off)->id = 0;
 			},
 		},
 		PluginStream{},
 		"nativeraster-wdgl");
 	if(result)
-		nativeRasterOffset = static_cast<int32>(result->value());
+		nativeRasterOffset = *result;
 }
 
 void
@@ -869,15 +843,14 @@ Texture::upload(void)
 		break;
 	}
 	glBindTexture(GL_TEXTURE_2D, 0);
-	GlRaster *glr = (GlRaster*)((uint8*)r + nativeRasterOffset);
-	glr->id = id;
+	plugin::extensionPtr(r, nativeRasterOffset)->id = id;
 }
 
 void
 Texture::bind(int n)
 {
 	Raster *r = this->raster;
-	GlRaster *glr = (GlRaster*)((uint8*)r + nativeRasterOffset);
+	GlRaster *glr = r ? plugin::extensionPtr(r, nativeRasterOffset) : nullptr;
 	glActiveTexture(GL_TEXTURE0+n);
 	if(r){
 		if(glr->id == 0)
