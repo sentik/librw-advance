@@ -209,8 +209,6 @@ Engine::init(MemoryFunctions *memfuncs)
 	if(Engine::memfuncs.rwmustrealloc == nil)
 		Engine::memfuncs.rwmustrealloc = mustrealloc_h;
 
-	PluginList::open();
-
 	// core plugin attach here
 	Frame::registerModule();
 	Image::registerModule();
@@ -342,8 +340,6 @@ Engine::term(void)
 		RWERROR((ERR_GENERAL));
 		return;
 	}
-
-	PluginList::close();
 
 	// This has to be reset because it won't be opened again otherwise
 	// TODO: maybe reset more stuff here?
